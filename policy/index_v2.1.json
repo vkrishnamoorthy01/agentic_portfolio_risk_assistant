@@ -1,7 +1,7 @@
 {
   "policy_version": "v2.1",
   "policy_file": "risk_policy_v2.md",
-  "corpus_sha256": "77d72d3d4c2a884b6dba8f817f43aed30a47a3306f15d6081d92e762404e8786",
+  "corpus_sha256": "636ff438a24768b10ecb0d846bbbb28dcce6edbeab0a3853aa1f128ef989bbf7",
   "embedding_model": "all-MiniLM-L6-v2",
   "max_seq_length": 256,
   "chunking": "paragraph",

@@ -86,7 +86,9 @@ class Passage:
 
 
 def corpus_sha256(version: str = POLICY_VERSION) -> str:
-    return hashlib.sha256(POLICY_FILES[version].read_bytes()).hexdigest()
+    """SHA-256 of the policy text with line endings normalized to LF (stable across checkouts)."""
+    text = POLICY_FILES[version].read_bytes().replace(b"\r\n", b"\n")
+    return hashlib.sha256(text).hexdigest()
 
 
 def parse_clauses(version: str = POLICY_VERSION) -> list[Clause]:
