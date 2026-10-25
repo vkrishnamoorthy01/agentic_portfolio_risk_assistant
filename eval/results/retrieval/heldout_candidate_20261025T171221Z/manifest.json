@@ -1,0 +1,43 @@
+{
+  "run": "retrieval heldout candidate",
+  "started_utc": "20261025T171221Z",
+  "command": "python eval/run_retrieval.py --split heldout --config candidate",
+  "git_commit": "0f300a738faefd4701bd3cf650994da2d1e84e3f",
+  "git_dirty": true,
+  "policy_version": "v2.1",
+  "policy_sha256_normalized": "636ff438a24768b10ecb0d846bbbb28dcce6edbeab0a3853aa1f128ef989bbf7",
+  "dataset_file": "cases_heldout.json",
+  "dataset_sha256": "43e4775a09d513f6e9fde93b295dddbbd7557297bbf498376f9f0edfcadaadc6",
+  "fixtures_sha256": "34d7f5d352b06d3a5589fd13aa7104a33d22b7fd5aea443ff7aadd0532707b5c",
+  "embedding_model": "all-MiniLM-L6-v2",
+  "max_seq_length": 256,
+  "config": "candidate",
+  "chunking": "paragraph",
+  "ranking": "distinct clauses, each by its best passage",
+  "passages": 98,
+  "ks": [
+    1,
+    2,
+    3,
+    5,
+    8
+  ],
+  "python": "3.12.14",
+  "packages": {
+    "sentence-transformers": "6.1.0",
+    "torch": "2.14.0",
+    "transformers": "5.17.0",
+    "numpy": "2.2.6"
+  },
+  "errors": [],
+  "exclusions": [
+    {
+      "case_id": "H27",
+      "top_clause": "RP24"
+    },
+    {
+      "case_id": "H28",
+      "top_clause": "RP13"
+    }
+  ]
+}
