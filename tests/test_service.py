@@ -104,7 +104,7 @@ def test_policy_returns_the_requested_number_of_sections(client: TestClient) -> 
         {"query": ""},
         {"query": "x" * 501},
         {"query": "volatility", "top_k": 0},
-        {"query": "volatility", "top_k": 6},  # the policy has 5 sections
+        {"query": "volatility", "top_k": 33},  # policy v2.1 has 32 clauses
     ],
 )
 def test_policy_rejects_invalid_requests(client: TestClient, params: dict) -> None:

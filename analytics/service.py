@@ -30,7 +30,7 @@ from fastapi import FastAPI, Query, Request
 from fastapi.responses import JSONResponse
 
 from portfolio import PORTFOLIO
-from retrieval import MAX_QUERY_CHARS, InvalidQueryError, policy_section_count, retrieve, warm_up
+from retrieval import MAX_QUERY_CHARS, POLICY_VERSION, InvalidQueryError, policy_section_count, retrieve, warm_up
 from var_models import InvalidInputError, historical_var, portfolio_returns
 
 logging.basicConfig(level=os.environ.get("LOG_LEVEL", "INFO"), format="%(asctime)s %(levelname)s %(name)s %(message)s")
@@ -162,4 +162,4 @@ def get_policy(
         raise InvalidQueryError(f"top_k must be between 1 and {policy_section_count()}, got {top_k}.")
     results = retrieve(query, top_k=top_k)
     logger.info("policy query: %d chars, top_k=%d, top section=%r", len(query), top_k, results[0]["section"])
-    return {"query": query, "results": results}
+    return {"query": query, "policy_version": POLICY_VERSION, "results": results}

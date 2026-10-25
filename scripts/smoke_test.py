@@ -49,7 +49,10 @@ def main(base: str) -> None:
 
     status, body = get(base, "/policy", {"query": "drawdown threshold from peak NAV", "top_k": 2})
     sections = [r["section"] for r in body.get("results", [])]
-    check("GET /policy real retrieval", status == 200 and sections[:1] == ["4. Drawdown Threshold"], sections)
+    # Policy v2.1 (clause RP19) on new deployments; older deployments serve the v1 headings.
+    expected = {"v2.1": "RP19 Drawdown Threshold"}.get(body.get("policy_version"), "4. Drawdown Threshold")
+    check("GET /policy real retrieval", status == 200 and sections[:1] == [expected],
+          f"policy {body.get('policy_version', 'v1')}: {sections}")
 
     status, _ = get(base, "/policy", {"query": ""})
     check("blank policy query rejected", status == 422, status)
