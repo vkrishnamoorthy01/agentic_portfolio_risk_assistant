@@ -30,11 +30,14 @@ mcp = MCPServer("portfolio-risk-tools")
 
 @mcp.tool()
 def get_portfolio_analytics() -> dict:
-    """Get live portfolio risk analytics for the 16-stock NSE equal-weighted
-    portfolio: 1-day return, 20-day annualized volatility, 99% one-day
-    historical VaR, drawdown from peak, largest position (concentration),
-    and top contributors/detractors. Use this whenever a question needs
-    current numbers, not policy interpretation.
+    """Get portfolio risk analytics for the 16-stock NSE equal-weighted
+    portfolio, computed from a SYNTHETIC price dataset (not market data),
+    as of the last date in that dataset (the "as_of" field): 1-day return,
+    20-day annualized volatility, 99% one-day historical VaR, drawdown from
+    peak, largest position (concentration), and top contributors/detractors.
+    Use this whenever a question needs the portfolio's numbers rather than
+    policy interpretation, and state the as_of date and that the data is
+    synthetic when reporting them.
     """
     return get_analytics()
 
@@ -44,7 +47,7 @@ def get_risk_policy_sections(query: str, top_k: int = 2) -> dict:
     """Retrieve the risk policy sections most relevant to a natural-language
     query, e.g. position concentration limits, volatility thresholds, VaR
     limits, or drawdown escalation rules. Use this whenever a question needs
-    the firm's policy limits, not live portfolio numbers.
+    the firm's policy limits, not the portfolio's numbers.
     """
     return {"query": query, "results": retrieve(query, top_k=top_k)}
 

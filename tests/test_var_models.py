@@ -10,8 +10,9 @@ from __future__ import annotations
 
 import numpy as np
 import pandas as pd
+import pytest
 
-from var_models import historical_var, portfolio_returns
+from var_models import InvalidInputError, historical_var, portfolio_returns
 
 
 def test_portfolio_returns_matches_manual_weighted_sum() -> None:
@@ -41,3 +42,41 @@ def test_historical_var_scales_linearly_with_notional() -> None:
     var_10x = historical_var(returns, confidence_level=0.99, notional=10_000.0)
 
     assert np.isclose(var_10x, 10 * var_1x)
+
+
+# --- input validation: bad inputs raise instead of producing a plausible number ---
+
+_RETURNS = pd.DataFrame({"A": [0.01, -0.02, 0.03], "B": [-0.01, 0.02, 0.00]})
+
+
+def test_a_weight_with_no_returns_column_is_rejected() -> None:
+    # Before validation, C would have silently dropped out of the weighted sum.
+    with pytest.raises(InvalidInputError, match="no returns for \\['C'\\]"):
+        portfolio_returns(_RETURNS, pd.Series({"A": 0.4, "B": 0.4, "C": 0.2}))
+
+
+def test_a_returns_column_with_no_weight_is_rejected() -> None:
+    with pytest.raises(InvalidInputError, match="no weights for \\['B'\\]"):
+        portfolio_returns(_RETURNS, pd.Series({"A": 1.0}))
+
+
+def test_weights_that_do_not_sum_to_one_are_rejected() -> None:
+    with pytest.raises(InvalidInputError, match="sum to"):
+        portfolio_returns(_RETURNS, pd.Series({"A": 0.4, "B": 0.4}))
+
+
+def test_a_missing_return_is_rejected_not_treated_as_zero() -> None:
+    returns = _RETURNS.copy()
+    returns.iloc[1, 0] = np.nan  # would otherwise count as a 0% day for A
+
+    with pytest.raises(InvalidInputError, match="\\['A'\\]"):
+        portfolio_returns(returns, pd.Series({"A": 0.4, "B": 0.6}))
+
+
+def test_historical_var_rejects_empty_or_missing_returns_and_bad_confidence() -> None:
+    with pytest.raises(InvalidInputError):
+        historical_var(pd.Series([], dtype=float), 0.99)
+    with pytest.raises(InvalidInputError):
+        historical_var(pd.Series([0.01, np.nan]), 0.99)
+    with pytest.raises(InvalidInputError):
+        historical_var(pd.Series([0.01, -0.02]), 1.5)

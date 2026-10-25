@@ -17,7 +17,10 @@ ENV/
 .env.*
 !.env.example
 How_to_run_locally_not_for_GitHub.md
+READ_BEFORE_README.md
 defense_doc.pdf
+# Stray conda output saved under this name by an earlier shell command
+3.12
 
 # Logs
 *.log

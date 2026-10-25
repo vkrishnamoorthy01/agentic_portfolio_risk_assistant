@@ -16,27 +16,42 @@ The pipeline this module implements, spelled out for reference:
   as a small numpy array, computed once at startup.
 - Retrieval: cosine similarity between the query embedding and every
   chunk embedding, ranked, top-k returned.
+
+sentence-transformers (and PyTorch behind it) is imported only when the
+model is first needed, so the analytics endpoints and their tests don't
+pay for it. In the Docker image the model is downloaded at build time and
+loaded from the local cache, with no network call at runtime.
 """
 
 from __future__ import annotations
 
 import re
 from pathlib import Path
+from typing import TYPE_CHECKING, Any
 
 import numpy as np
-from sentence_transformers import SentenceTransformer
+
+if TYPE_CHECKING:
+    from sentence_transformers import SentenceTransformer
 
 POLICY_PATH = Path(__file__).parent.parent / "policy" / "risk_policy.md"
 EMBEDDING_MODEL_NAME = "all-MiniLM-L6-v2"
+MAX_QUERY_CHARS = 500
 
 _model: SentenceTransformer | None = None
 _chunks: list[str] | None = None
 _chunk_embeddings: np.ndarray | None = None
 
 
+class InvalidQueryError(ValueError):
+    """A retrieval request is empty, too long, or asks for an impossible top_k."""
+
+
 def _get_model() -> SentenceTransformer:
     global _model
     if _model is None:
+        from sentence_transformers import SentenceTransformer
+
         _model = SentenceTransformer(EMBEDDING_MODEL_NAME)
     return _model
 
@@ -54,19 +69,41 @@ def _get_chunks_and_embeddings() -> tuple[list[str], np.ndarray]:
         text = POLICY_PATH.read_text(encoding="utf-8")
         _chunks = _chunk_policy(text)
         model = _get_model()
-        _chunk_embeddings = model.encode(_chunks, normalize_embeddings=True)
+        _chunk_embeddings = model.encode(_chunks, normalize_embeddings=True, show_progress_bar=False)
     return _chunks, _chunk_embeddings
 
 
-def retrieve(query: str, top_k: int = 2) -> list[dict]:
+def policy_section_count() -> int:
+    """Number of policy sections (chunks), without loading the embedding model."""
+    return len(_chunk_policy(POLICY_PATH.read_text(encoding="utf-8")))
+
+
+def warm_up() -> None:
+    """Load the model and embed the policy now, so the first request isn't slow."""
+    _get_chunks_and_embeddings()
+
+
+def retrieve(query: str, top_k: int = 2) -> list[dict[str, Any]]:
     """Return the top_k policy chunks most similar to the query.
 
     Embeddings are normalized, so cosine similarity reduces to a dot
     product between the query vector and each chunk vector.
+
+    Raises:
+        InvalidQueryError: for a blank or overlong query, or top_k outside
+            1..number of policy sections.
     """
+    if not query or not query.strip():
+        raise InvalidQueryError("query must not be empty.")
+    if len(query) > MAX_QUERY_CHARS:
+        raise InvalidQueryError(f"query is {len(query)} characters; the limit is {MAX_QUERY_CHARS}.")
+    sections = policy_section_count()
+    if not 1 <= top_k <= sections:
+        raise InvalidQueryError(f"top_k must be between 1 and {sections}, got {top_k}.")
+
     chunks, chunk_embeddings = _get_chunks_and_embeddings()
     model = _get_model()
-    query_embedding = model.encode([query], normalize_embeddings=True)[0]
+    query_embedding = model.encode([query], normalize_embeddings=True, show_progress_bar=False)[0]
 
     scores = chunk_embeddings @ query_embedding
     ranked_indices = np.argsort(scores)[::-1][:top_k]
