@@ -1,0 +1,5 @@
+# Policy corpora and evaluation data are parsed by paragraph and verified by
+# SHA-256 (policy/index_*.json, eval/dataset/FREEZE.json), so their line
+# endings must not change on checkout.
+policy/** text eol=lf
+eval/** text eol=lf

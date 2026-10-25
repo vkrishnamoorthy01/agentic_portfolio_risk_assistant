@@ -93,7 +93,7 @@ def parse_clauses(version: str = POLICY_VERSION) -> list[Clause]:
     """Split a policy file into its numbered clauses."""
     if version not in POLICY_FILES:
         raise ValueError(f"Unknown policy version {version!r}; use one of {sorted(POLICY_FILES)}.")
-    text = POLICY_FILES[version].read_text(encoding="utf-8")
+    text = POLICY_FILES[version].read_text(encoding="utf-8").replace("\r\n", "\n")
     heading = _V2_HEADING if version == "v2.1" else _V1_HEADING
     clauses = []
     for section in re.split(r"\n(?=## )", text):
