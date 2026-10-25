@@ -36,7 +36,8 @@ def check(label: str, condition: bool, detail: object = "") -> None:
 def main(base: str) -> None:
     started = time.perf_counter()
     status, body = get(base, "/health")
-    check("GET /health", status == 200 and body == {"status": "ok"}, f"({time.perf_counter() - started:.1f}s)")
+    check("GET /health", status == 200 and body.get("status") == "ok",
+          f"commit={body.get('commit')} ({time.perf_counter() - started:.1f}s)")
 
     status, body = get(base, "/analytics")
     check("GET /analytics status", status == 200, status)

@@ -102,7 +102,9 @@ def load_prices() -> pd.DataFrame:
 
 @app.get("/health")
 def health() -> dict:
-    return {"status": "ok"}
+    # Render sets RENDER_GIT_COMMIT to the deployed commit, so this shows which
+    # version is live; "local" when run outside Render.
+    return {"status": "ok", "commit": os.environ.get("RENDER_GIT_COMMIT", "local")}
 
 
 @app.get("/analytics")

@@ -29,11 +29,18 @@ def test_importing_the_service_does_not_load_the_embedding_model() -> None:
     assert "sentence_transformers" not in sys.modules
 
 
-def test_health(client: TestClient) -> None:
+def test_health(client: TestClient, monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.delenv("RENDER_GIT_COMMIT", raising=False)
     response = client.get("/health")
 
     assert response.status_code == 200
-    assert response.json() == {"status": "ok"}
+    assert response.json() == {"status": "ok", "commit": "local"}
+
+
+def test_health_reports_the_deployed_commit(client: TestClient, monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("RENDER_GIT_COMMIT", "36669c5abc")
+
+    assert client.get("/health").json()["commit"] == "36669c5abc"
 
 
 def test_analytics_reproduces_the_independently_checked_numbers(client: TestClient) -> None:
