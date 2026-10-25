@@ -1,0 +1,4 @@
+# Optional: only for the paid generation evaluation (eval/run_generation.py without --dry-run).
+# Not used by the service, the tests or CI. Install versions are recorded in each run manifest.
+anthropic
+deepeval

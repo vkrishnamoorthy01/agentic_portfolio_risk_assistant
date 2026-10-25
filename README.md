@@ -16,7 +16,7 @@ User -> Make.com (orchestrator) -> Portfolio Analytics tool (Python, determinist
      -> synthesized risk assessment -> human approval for any consequential action
 ```
 
-The human-approval step and the escalation logging in `policy/risk_policy.md` are controls the policy prescribes. Nothing in this repo enforces them: no approval gate, no escalation log. The assistant only reads numbers and policy text; it can't trade.
+The human-approval step and the escalation logging in the risk policy (`policy/risk_policy_v2.md`) are controls the policy prescribes. Nothing in this repo enforces them: no approval gate, no escalation log. The assistant only reads numbers and policy text; it can't trade.
 
 
 - **Market data**: synthetic daily prices for the 16 tickers (`data/generate_mock_data.py`), no live Kite dependency, swappable later.
@@ -65,12 +65,14 @@ The image (`Dockerfile`, pinned dependencies in `requirements-service.txt`) inst
 
 **Deployment (Render, free tier):** `render.yaml` defines the service as a Render Blueprint. In Render: **New > Blueprint**, pick this repo, apply. Render builds the Dockerfile, checks `/health`, and redeploys each new commit on `main` only after its GitHub checks pass (`autoDeployTrigger: checksPass`). Free instances sleep after 15 minutes idle and take about a minute to wake. Verify a deployment with `python scripts/smoke_test.py https://<service>.onrender.com`.
 
+**Policy v2.1 and evaluation:** the retrieval corpus is now policy v2.1 (`policy/risk_policy_v2.md`, 32 clauses RP01-RP32), embedded as paragraph passages so no passage exceeds the model's 256-token limit; the original 5-section policy is kept as `policy/risk_policy_v1.md` (`POLICY_VERSION=v1`). `eval/` holds a 50-case golden dataset (dev and frozen held-out), a retrieval evaluation, a generation-evaluation harness (DeepEval, not yet run; paid calls need `requirements-eval.txt` and an API key) and a manual-review sheet. Results and what is still pending: `eval/VALIDATION_REPORT.md`.
+
 ## Status
 
 - [x] V1 step 1: project scaffold + synthetic 16-stock daily price data (`data/mock_prices.csv`, 260 trading days)
 - [x] V1: bare Make scenario, one fixed LLM call (Webhooks > Custom webhook -> Anthropic Claude "Simple Text Prompt" -> Webhooks > Webhook response). Working end-to-end.
 - [x] V2: `analytics/service.py` FastAPI app ported from `risk_project`, exposing `GET /analytics` (portfolio return, 20-day vol, 99% historical VaR, drawdown, concentration, top contributors/detractors, individual returns, all percentage fields pre-scaled with `_pct` suffixes), tunneled via ngrok, wired into the Make scenario. Working end-to-end, verified against live output.
-- [x] V3: `policy/risk_policy.md` drafted and `analytics/retrieval.py` built: chunking (split on `## ` headers) + local embeddings (`sentence-transformers`, `all-MiniLM-L6-v2`) + in-memory cosine-similarity search, exposed as `GET /policy?query=...`. Claude now explicitly states breach/no-breach per policy section (verified live: correctly flagged volatility as RED-breach and VaR as compliant, citing the right sections).
+- [x] V3: `policy/risk_policy.md` (now kept as `policy/risk_policy_v1.md`) drafted and `analytics/retrieval.py` built: chunking (split on `## ` headers) + local embeddings (`sentence-transformers`, `all-MiniLM-L6-v2`) + in-memory cosine-similarity search, exposed as `GET /policy?query=...`. Claude now explicitly states breach/no-breach per policy section (verified live: correctly flagged volatility as RED-breach and VaR as compliant, citing the right sections).
 - [x] V4: separate Make scenario `Agentic_portfolio_risk_assistant_v4`. Webhooks -> Make AI Agent (Claude Haiku 4.5; two tools: `get_portfolio_analytics`, `get_risk_policy_sections`) -> Webhooks. Verified end-to-end with three tool-selective questions, see below.
 - [x] V5: `analytics/mcp_server.py`, same logic exposed as two MCP tools over stdio, registered via `.mcp.json`, consumed by Claude Code. Tool discovery happened automatically and invocation worked live in-conversation, see below.
 
