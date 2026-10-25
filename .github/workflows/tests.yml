@@ -1,0 +1,21 @@
+name: tests
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  pytest:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+      # The tests cover the analytics calculations and the price file, which
+      # need only pandas and numpy. requirements.txt also pulls in
+      # sentence-transformers (PyTorch, gigabytes), which no test uses yet.
+      - name: Install test dependencies
+        run: pip install pandas numpy pytest
+      - name: Run tests
+        run: python -m pytest tests -v
