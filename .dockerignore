@@ -1,0 +1,21 @@
+# Only what the service needs goes into the build context.
+.git
+.github
+.claude
+.mcp.json
+.env
+.env.*
+**/__pycache__
+**/*.py[cod]
+.pytest_cache
+tests
+scripts
+READ_BEFORE_README.md
+How_to_run_locally_not_for_GitHub.md
+defense_doc.pdf
+3.12
+README.md
+render.yaml
+Dockerfile
+.dockerignore
+data/generate_mock_data.py

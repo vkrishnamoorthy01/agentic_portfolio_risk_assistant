@@ -12,10 +12,40 @@ jobs:
       - uses: actions/setup-python@v7
         with:
           python-version: "3.12"
-      # The tests cover the analytics calculations and the price file, which
-      # need only pandas and numpy. requirements.txt also pulls in
-      # sentence-transformers (PyTorch, gigabytes), which no test uses yet.
+      # The unit and endpoint tests stub retrieval, so they need neither
+      # sentence-transformers nor PyTorch (gigabytes). The real model is
+      # exercised by the docker job below. No credentials, no model calls.
       - name: Install test dependencies
-        run: pip install pandas numpy pytest
+        run: pip install pandas==3.0.5 numpy==2.2.6 fastapi==0.141.1 httpx==0.28.1 pytest==9.1.1
       - name: Run tests
         run: python -m pytest tests -v
+
+  docker:
+    needs: pytest
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+      - name: Build the image
+        run: docker build -t portfolio-risk-service:ci .
+      # Same memory cap as Render's free instance, so an image that won't fit
+      # there fails here first.
+      - name: Start the container (512 MB limit)
+        run: docker run -d --name svc -p 8000:8000 --memory=512m portfolio-risk-service:ci
+      - name: Wait for /health
+        run: |
+          for i in $(seq 1 60); do
+            if curl -fs http://localhost:8000/health; then echo; exit 0; fi
+            sleep 2
+          done
+          docker logs svc
+          exit 1
+      - name: Smoke test the running container
+        run: python scripts/smoke_test.py http://localhost:8000
+      - name: Memory use and logs
+        if: always()
+        run: |
+          docker stats --no-stream svc || true
+          docker logs svc || true

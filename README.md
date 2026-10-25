@@ -16,6 +16,8 @@ User -> Make.com (orchestrator) -> Portfolio Analytics tool (Python, determinist
      -> synthesized risk assessment -> human approval for any consequential action
 ```
 
+The human-approval step and the escalation logging in `policy/risk_policy.md` are controls the policy prescribes. Nothing in this repo enforces them: no approval gate, no escalation log. The assistant only reads numbers and policy text; it can't trade.
+
 
 - **Market data**: synthetic daily prices for the 16 tickers (`data/generate_mock_data.py`), no live Kite dependency, swappable later.
 - **Analytics tool**: Python service ported from `risk_project`, exposing deterministic calculations (returns, vol, contributors, concentration, historical VaR) over HTTP. The LLM never does the arithmetic itself.
@@ -47,6 +49,22 @@ uvicorn service:app --reload
 
 Then hit `http://localhost:8000/analytics` or `http://localhost:8000/policy?query=...` directly. Wiring this into Make.com the way V1-V4 do also needs an ngrok tunnel and a Make scenario with an Anthropic API key configured in Make's UI. Both live outside this repo, so they're not reproducible just by cloning it.
 
+Every `/analytics` response is computed from the synthetic price file and says so: `data_source` is `synthetic` and `as_of` is the file's last date (2026-09-11). Bad inputs fail loudly instead of producing a number: a missing price or ticker returns a 500 with the reason, and an empty, overlong (over 500 characters) or out-of-range `/policy` request returns a 422.
+
+**Docker:**
+
+```
+docker build -t portfolio-risk-service .
+docker run --rm -p 8000:8000 --memory=512m portfolio-risk-service
+python scripts/smoke_test.py http://localhost:8000
+```
+
+The image (`Dockerfile`, pinned dependencies in `requirements-service.txt`) installs CPU-only PyTorch and downloads the embedding model at build time, so the container makes no network calls at runtime. It loads the model at startup (about 10 seconds), runs as a non-root user, and listens on `$PORT` (8000 by default). Make.com, ngrok and the LLM stay outside it.
+
+**Tests and CI:** `python -m pytest tests -v` runs the unit and endpoint tests (retrieval is stubbed, so no model download). GitHub Actions (`.github/workflows/tests.yml`) runs them on every push and pull request, then builds the image, starts it under a 512 MB memory cap and runs `scripts/smoke_test.py` against it, with the real model.
+
+**Deployment (Render, free tier):** `render.yaml` defines the service as a Render Blueprint. In Render: **New > Blueprint**, pick this repo, apply. Render builds the Dockerfile, checks `/health`, and redeploys each new commit on `main` only after its GitHub checks pass (`autoDeployTrigger: checksPass`). Free instances sleep after 15 minutes idle and take about a minute to wake. Verify a deployment with `python scripts/smoke_test.py https://<service>.onrender.com`.
+
 ## Status
 
 - [x] V1 step 1: project scaffold + synthetic 16-stock daily price data (`data/mock_prices.csv`, 260 trading days)
@@ -66,7 +84,9 @@ Verified via Make's execution-log trace, not inferred from the answer text.
 | "What does VaR mean?" | none | 4.46 | recognized a pure knowledge question |
 | "Are there any serious risk issues in my portfolio today?" | `get_portfolio_analytics` -> `get_risk_policy_sections` | 8.87 | got numbers first, then checked them against policy limits |
 
-For the third question, the agent correctly classified 20-day volatility as a RED-zone policy breach (22.88% vs. the 20% threshold) while confirming concentration and VaR were within limits, a genuine breach determination the fixed V1-V3 pipeline never had to make itself. `_v3` always calls both tools in the same fixed order regardless of the question (live data, but a deterministic workflow); `_v4`'s tool-call count and sequence change based on what the question needs (0, 1, or 2 calls), and credit cost scales with that (4.46 -> 6.26 -> 8.87).
+For the third question, the agent correctly classified 20-day volatility as a RED-zone policy breach (22.88% vs. the 20% threshold) while confirming concentration and VaR were within limits, a genuine breach determination the fixed V1-V3 pipeline never had to make itself. `_v3` always calls both tools in the same fixed order regardless of the question (tool output computed at call time from the synthetic dataset, but a deterministic workflow); `_v4`'s tool-call count and sequence change based on what the question needs (0, 1, or 2 calls), and credit cost scales with that (4.46 -> 6.26 -> 8.87).
+
+A later recheck of the same snapshot: drawdown from peak is -22.48%, beyond the policy's 8% threshold (Section 4), which also triggers escalation (Section 5), and the answer above doesn't mention it. Whether the agent missed it can't be settled without its saved response and retrieved passages, so it is an open case for the evaluation milestone, not a verified result either way.
 
 ## V5: MCP vs. direct HTTP wiring
 

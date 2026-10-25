@@ -1,0 +1,10 @@
+# Pinned runtime dependencies for the HTTP service container (Dockerfile).
+# Versions match the local environment the tests pass in. PyTorch is installed
+# separately in the Dockerfile from PyTorch's CPU-only index (torch==2.14.0),
+# which avoids several GB of GPU libraries. The MCP server and the local
+# Make.com/ngrok workflow keep using requirements.txt.
+fastapi==0.141.1
+uvicorn==0.52.4
+pandas==3.0.5
+numpy==2.2.6
+sentence-transformers==6.1.0

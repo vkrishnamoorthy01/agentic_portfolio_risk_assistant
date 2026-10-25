@@ -1,0 +1,15 @@
+# Render Blueprint for the HTTP service (free tier: 0.1 CPU, 512 MB RAM;
+# sleeps after 15 minutes idle, about a minute to wake on the next request).
+# Render builds the Dockerfile; no secrets are needed.
+services:
+  - type: web
+    name: portfolio-risk-service
+    runtime: docker
+    plan: free
+    region: singapore
+    branch: main
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /health
+    # Deploy a new commit on main only after its GitHub checks (the tests
+    # workflow, including the Docker smoke test) have passed.
+    autoDeployTrigger: checksPass
