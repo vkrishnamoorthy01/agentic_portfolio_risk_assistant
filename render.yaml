@@ -1,6 +1,8 @@
 # Render Blueprint for the HTTP service (free tier: 0.1 CPU, 512 MB RAM;
 # sleeps after 15 minutes idle, about a minute to wake on the next request).
-# Render builds the Dockerfile; no secrets are needed.
+# Render builds the Dockerfile. Market prices aren't in the repo: upload
+# prices_<source>.csv and .json as secret files (Environment > Secret Files);
+# they appear in /etc/secrets. Without them the service uses synthetic prices.
 services:
   - type: web
     name: portfolio-risk-service
@@ -13,3 +15,6 @@ services:
     # Deploy a new commit on main only after its GitHub checks (the tests
     # workflow, including the Docker smoke test) have passed.
     autoDeployTrigger: checksPass
+    envVars:
+      - key: PRICE_DATA_DIR
+        value: /etc/secrets

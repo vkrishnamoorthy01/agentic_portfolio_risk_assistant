@@ -3,8 +3,9 @@
     python scripts/smoke_test.py http://localhost:8000
     python scripts/smoke_test.py https://<your-service>.onrender.com
 
-Checks /health, the /analytics numbers and labels, a real /policy retrieval
-(the embedding model, not a stub), and that a blank query is rejected.
+Checks /health, that /analytics names its price source and date (and the exact
+numbers when it serves synthetic prices), a real /policy retrieval (the
+embedding model, not a stub), include_core, and that a blank query is rejected.
 Standard library only, so it runs anywhere. Exits non-zero on any failure.
 """
 

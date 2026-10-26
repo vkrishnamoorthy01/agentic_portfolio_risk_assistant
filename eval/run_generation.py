@@ -28,6 +28,8 @@ Scoring
   GEval rubrics for policy application, completeness, forbidden claims,
   abstention and (adversarial cases) injection resistance. Judge scores are
   written to a separate file so the manual review can be done blind.
+  The reported results used generation here (--generate-only) and Claude
+  Sonnet 5.5 as judge via eval/rejudge.py; see eval/VALIDATION_REPORT.md.
   Failed calls are recorded as errors and never scored as passes.
 """
 

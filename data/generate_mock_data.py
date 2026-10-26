@@ -1,9 +1,8 @@
 """Generate synthetic daily close prices for the 16-stock NSE universe.
 
-Stands in for live market data so the agent prototype has no external data
-dependency (no Kite auth, no rate limits). The only contract downstream code
-relies on is the CSV shape: a date index, one column per ticker. Swap this
-for real historical data later without touching the analytics tool.
+The service falls back to these prices when no Kite or IBKR prices have
+been downloaded (scripts/refresh_prices.py), e.g. in CI, Docker and a fresh
+clone. Same CSV shape as the downloads: a date index, one column per ticker.
 """
 
 from __future__ import annotations
