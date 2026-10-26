@@ -1,7 +1,7 @@
 """Blinded manual-review sheet for generated answers, and the later judge-vs-human comparison.
 
-    python eval/make_review_sheet.py --run eval/results/generation/heldout_full_<stamp>
-    python eval/make_review_sheet.py --run eval/results/generation/heldout_full_<stamp> --compare
+    python eval/make_review_sheet.py --run eval/results/generation/heldout_generate_<stamp>
+    python eval/make_review_sheet.py --run eval/results/generation/heldout_generate_<stamp> --compare
 
 The sheet holds the question, the evidence IDs the model saw, the answer and
 the reference elements, in a shuffled order. It never contains judge scores
@@ -83,11 +83,19 @@ def make_sheet(run: Path) -> Path:
     return path
 
 
+def judge_file(run: Path) -> Path:
+    """The newest Claude re-judge scores in the run, else the run's own judge scores."""
+    rejudged = sorted(run.glob("judge_scores_sonnet_*.jsonl")) or sorted(run.glob("judge_scores_opus_*.jsonl"))
+    return rejudged[-1] if rejudged else run / "judge_scores.jsonl"
+
+
 def compare(run: Path) -> None:
     path = SHEETS / f"review_sheet_{run.name}.csv"
     with path.open(encoding="utf-8", newline="") as f:
         human = {r["case_id"]: r for r in csv.DictReader(f)}
-    judged = {j["case_id"]: j["scores"] for j in read_jsonl(run / "judge_scores.jsonl") if j["condition"] == REVIEW_CONDITION}
+    scores = judge_file(run)
+    print("judge scores:", scores.name)
+    judged = {j["case_id"]: j["scores"] for j in read_jsonl(scores) if j["condition"] == REVIEW_CONDITION}
     filled = [r for r in human.values() if any(r[d].strip() for d in DIMENSIONS)]
     if not filled:
         print("Comparison pending: no human scores in", path.relative_to(ROOT))
