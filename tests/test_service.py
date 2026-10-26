@@ -28,6 +28,7 @@ def data_dir(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> Path:
     shutil.copy(MOCK_PRICES, tmp_path / "mock_prices.csv")
     monkeypatch.setattr(prices, "DATA_DIR", tmp_path)
     monkeypatch.delenv("PRICE_SOURCE", raising=False)
+    monkeypatch.delenv("PRICE_DATA_DIR", raising=False)
     return tmp_path
 
 
@@ -122,6 +123,17 @@ def test_price_source_variable_sets_the_default(client: TestClient, data_dir: Pa
     monkeypatch.setenv("PRICE_SOURCE", "synthetic")
 
     assert client.get("/analytics").json()["data_source"] == "synthetic"
+
+
+def test_price_data_dir_moves_downloads_but_not_the_synthetic_file(
+    client: TestClient, data_dir: Path, monkeypatch: pytest.MonkeyPatch, tmp_path_factory: pytest.TempPathFactory
+) -> None:
+    secrets = tmp_path_factory.mktemp("secrets")  # stands in for Render's /etc/secrets
+    add_download(secrets, "ibkr_live", "2026-09-11")
+    monkeypatch.setenv("PRICE_DATA_DIR", str(secrets))
+
+    assert client.get("/analytics").json()["data_source"] == "ibkr_live"
+    assert client.get("/analytics", params={"source": "synthetic"}).json()["as_of"] == "2026-09-11"
 
 
 @pytest.mark.parametrize("source", ["ibkr_live", "yahoo"])

@@ -66,7 +66,7 @@ python scripts/refresh_prices.py --source kite                    # Kite login
 python scripts/refresh_prices.py --source ibkr_live --cache-only  # IBKR bars already stored, no connection
 ```
 
-Market data only; nothing places orders. The downloads are gitignored, so Docker, CI and Render serve synthetic prices. Every response names its source (`data_source`), its last session (`as_of`), what is downloaded (`downloaded_sources`), and in `data_note` how to fetch newer prices. Bad inputs fail loudly instead of producing a number: a missing price or ticker returns a 500 with the reason, and an empty, overlong (over 500 characters) or out-of-range `/policy` request returns a 422.
+Market data only; nothing places orders. The downloads are gitignored, so Docker and CI serve synthetic prices. On Render, upload `prices_<source>.csv` and `prices_<source>.json` as secret files and set `PRICE_DATA_DIR=/etc/secrets`; re-upload them after each refresh. Every response names its source (`data_source`), its last session (`as_of`), what is downloaded (`downloaded_sources`), and in `data_note` how to fetch newer prices. Bad inputs fail loudly instead of producing a number: a missing price or ticker returns a 500 with the reason, and an empty, overlong (over 500 characters) or out-of-range `/policy` request returns a 422.
 
 **Docker:**
 

@@ -12,7 +12,9 @@ Market prices are never fetched while serving a request. Kite needs a daily
 login and IBKR needs TWS running, so scripts/refresh_prices.py downloads
 them into data/prices_<source>.csv, with data/prices_<source>.json
 describing the download. A request reads the newest file on disk, so a
-refresh is picked up without restarting the service.
+refresh is picked up without restarting the service. PRICE_DATA_DIR points
+at another folder for the downloads, e.g. Render's /etc/secrets where
+uploaded secret files appear.
 """
 
 from __future__ import annotations
@@ -40,13 +42,19 @@ class UnknownSourceError(ValueError):
     """A price source that does not exist, or one that has not been downloaded yet."""
 
 
+def download_dir() -> Path:
+    """Where downloaded prices live: PRICE_DATA_DIR if set (on Render, /etc/secrets for uploaded
+    secret files), else data/. The synthetic file always stays in data/."""
+    return Path(os.environ["PRICE_DATA_DIR"]) if os.environ.get("PRICE_DATA_DIR") else DATA_DIR
+
+
 def snapshot_path(source: str) -> Path:
-    return DATA_DIR / ("mock_prices.csv" if source == "synthetic" else f"prices_{source}.csv")
+    return DATA_DIR / "mock_prices.csv" if source == "synthetic" else download_dir() / f"prices_{source}.csv"
 
 
 def snapshot_meta(source: str) -> dict | None:
     """The refresh script's description of a downloaded source, or None if it has not been downloaded."""
-    meta = DATA_DIR / f"prices_{source}.json"
+    meta = download_dir() / f"prices_{source}.json"
     if source == "synthetic" or not meta.exists() or not snapshot_path(source).exists():
         return None
     return json.loads(meta.read_text(encoding="utf-8"))
