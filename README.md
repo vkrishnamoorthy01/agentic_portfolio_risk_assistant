@@ -21,7 +21,7 @@ The human-approval step and the escalation logging in the risk policy (`policy/r
 
 - **Market data**: daily closes for the 16 tickers from Kite, IBKR paper or IBKR live (downloaded by `scripts/refresh_prices.py`), or synthetic prices (`data/generate_mock_data.py`) where nothing has been downloaded.
 - **Analytics tool**: Python service ported from `risk_project`, exposing deterministic calculations (returns, vol, contributors, concentration, historical VaR) over HTTP. The LLM never does the arithmetic itself.
-- **RAG**: a short fictional risk policy document, retrieved via real embedding and cosine-similarity search, no vector DB needed at this scale.
+- **RAG**: a fictional 32-clause risk policy manual (v2.1), retrieved via real embedding and cosine-similarity search, no vector DB needed at this scale.
 - **Orchestrator**: Make.com (free plan). V1 uses a fixed scenario; V4 swaps in Make's AI Agent module so the LLM decides which tools to call.
 - **Local hosting**: the Python service runs locally, tunneled to Make via ngrok (free).
 - **MCP (V5)**: `analytics/mcp_server.py` wraps the same `get_analytics`/`retrieve` logic as MCP tools over stdio, registered via `.mcp.json`. Host/client is Claude Code itself, so no ngrok or cloud infra needed.
@@ -82,7 +82,7 @@ The image (`Dockerfile`, pinned dependencies in `requirements-service.txt`) inst
 
 **Deployment (Render, free tier):** `render.yaml` defines the service as a Render Blueprint. In Render: **New > Blueprint**, pick this repo, apply. Render builds the Dockerfile, checks `/health`, and redeploys each new commit on `main` only after its GitHub checks pass (`autoDeployTrigger: checksPass`). Free instances sleep after 15 minutes idle and take about a minute to wake. Verify a deployment with `python scripts/smoke_test.py https://<service>.onrender.com`.
 
-**Policy v2.1 and evaluation:** the retrieval corpus is now policy v2.1 (`policy/risk_policy_v2.md`, 32 clauses RP01-RP32), embedded as paragraph passages so no passage exceeds the model's 256-token limit; the original 5-section policy is kept as `policy/risk_policy_v1.md` (`POLICY_VERSION=v1`). `eval/` holds a 50-case golden dataset (dev and frozen held-out), a retrieval evaluation, a generation-evaluation harness (DeepEval, not yet run; paid calls need `requirements-eval.txt` and an API key) and a manual-review sheet. Results and what is still pending: `eval/VALIDATION_REPORT.md`.
+**Policy v2.1 and evaluation:** the retrieval corpus is now policy v2.1 (`policy/risk_policy_v2.md`, 32 clauses RP01-RP32), embedded as paragraph passages so no passage exceeds the model's 256-token limit; the original 5-section policy is kept as `policy/risk_policy_v1.md` (`POLICY_VERSION=v1`). `eval/` holds a 50-case golden dataset (dev and frozen held-out), a retrieval evaluation, an answer-quality evaluation (Claude Haiku 4.5 answers scored by a Claude Sonnet 5.5 judge with DeepEval; paid calls need `requirements-eval.txt` and an API key) and a manual review of 14 held-out answers. Results, limitations and what is still open: `eval/VALIDATION_REPORT.md`.
 
 ## Status
 
