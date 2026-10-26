@@ -119,13 +119,11 @@ A later recheck of the same snapshot: drawdown from peak is -22.48%, beyond the 
 
 ## Notable bugs and lessons
 
-**Percentage/unit-conversion bug (V2, 2026-09-12).** `analytics/service.py` originally returned percentage fields as raw fractions (`0.0211` for 2.11%). The Make prompt had `% of NAV` hardcoded right after the VaR fraction, so it rendered as "0.0211% of NAV" instead of "2.11% of NAV". Three other fields in the same prompt had no `%` hardcoded, and Claude happened to correctly infer a ×100 conversion for those, so the prompt was right 3 times out of 4, by luck, not design. Fix: moved the conversion into `service.py`. Every percentage field is now pre-scaled with an explicit `_pct` suffix, so appending a literal `%` in the prompt is always correct, no inference needed.
+**Percentages as fractions (V2, 2026-09-12).** The service returned 0.0211 for 2.11%. A Make prompt with "% of NAV" hardcoded printed "0.0211% of NAV"; Claude guessed the ×100 right for the other three fields, by luck. Fix: every percentage field is now pre-scaled with a `_pct` suffix.
 
-**Retrieval-quality finding (V3, 2026-09-12).** With only 5 short, initially similar policy chunks, the small local embedding model (`all-MiniLM-L6-v2`) struggled to tell them apart. The query "is the portfolio too volatile" ranked the actual Volatility Thresholds section 3rd out of 5. Fix (partial): rewrote the policy doc so escalation instructions live only in one section, leaving the others more topically distinct vocabulary. That fixed the direct case. What didn't get fixed: "is the fund too jumpy right now" still ranks Volatility Thresholds last, the real ceiling of a small, free, local embedding model on colloquial phrasing. Kept as-is as a genuine, reproducible retrieval-failure case study rather than papered over. On policy v2.1 the same question ranks the volatility clause 6th, so a top-2 search still misses it.
+**Colloquial questions miss (V3, 2026-09-12).** The small local embedding model (`all-MiniLM-L6-v2`) ranked the volatility section 3rd of 5 for "is the portfolio too volatile", and last for "is the fund too jumpy right now". Rewording the policy fixed the first, not the second. On policy v2.1 "jumpy" ranks the volatility clause 6th, so a top-2 search still misses it.
 
 **Broad questions retrieve examples, not rules (2026-10-26).** "Any serious risk issues today?" pulled a worked example instead of the limits, so both Make scenarios answered without thresholds. Fix: `include_core=true` always adds the core limit clauses. On held-out, cases with every needed clause went from 9 of 26 to 16 of 26.
-
-**Make array-mapping quirk (V3, 2026-09-12).** Make's field-picker only offers a flattened preview for an array field like `/policy`'s `results`, so clicking doesn't cleanly grab a single item. Fix: type the reference directly using Make's 1-based bracket syntax, `{{8.data.results[1].text}}`.
 
 ---
 
