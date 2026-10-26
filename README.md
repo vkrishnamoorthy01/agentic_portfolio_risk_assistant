@@ -47,7 +47,7 @@ uvicorn service:app --reload
 ```
 
 
-Then hit `http://localhost:8000/analytics` or `http://localhost:8000/policy?query=...` directly. Wiring this into Make.com the way V1-V4 do also needs an ngrok tunnel and a Make scenario with an Anthropic API key configured in Make's UI. Both live outside this repo, so they're not reproducible just by cloning it.
+Then hit `http://localhost:8000/analytics` or `http://localhost:8000/policy?query=...` directly. For overall risk questions, add `&include_core=true`: the policy search alone often returns the worked examples instead of the rules, so this always adds the core limit and escalation clauses (RP13, RP15, RP17, RP19, RP25) ahead of the search results. Wiring this into Make.com the way V1-V4 do also needs an ngrok tunnel and a Make scenario with an Anthropic API key configured in Make's UI. Both live outside this repo, so they're not reproducible just by cloning it.
 
 **Price data.** `/analytics?source=` (or the `PRICE_SOURCE` variable) picks the prices:
 

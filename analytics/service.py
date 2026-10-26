@@ -161,13 +161,15 @@ def get_analytics(source: str | None = Query(None, description=f"one of {list(SO
 def get_policy(
     query: str = Query(..., min_length=1, max_length=MAX_QUERY_CHARS),
     top_k: int = Query(2, ge=1),
+    include_core: bool = Query(False, description="also return the core limit and escalation clauses"),
 ) -> dict:
     """Retrieve the policy sections most relevant to a natural-language query.
 
-    e.g. /policy?query=has the portfolio breached any risk limits
+    e.g. /policy?query=has the portfolio breached any risk limits&include_core=true
     """
     if top_k > policy_section_count():
         raise InvalidQueryError(f"top_k must be between 1 and {policy_section_count()}, got {top_k}.")
-    results = retrieve(query, top_k=top_k)
-    logger.info("policy query: %d chars, top_k=%d, top section=%r", len(query), top_k, results[0]["section"])
-    return {"query": query, "policy_version": POLICY_VERSION, "results": results}
+    results = retrieve(query, top_k=top_k, include_core=include_core)
+    logger.info("policy query: %d chars, top_k=%d, include_core=%s, top section=%r",
+                len(query), top_k, include_core, results[0]["section"])
+    return {"query": query, "policy_version": POLICY_VERSION, "include_core": include_core, "results": results}

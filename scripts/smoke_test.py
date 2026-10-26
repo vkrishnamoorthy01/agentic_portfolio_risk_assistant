@@ -57,6 +57,11 @@ def main(base: str) -> None:
     check("GET /policy real retrieval", status == 200 and sections[:1] == [expected],
           f"policy {body.get('policy_version', 'v1')}: {sections}")
 
+    if body.get("policy_version") == "v2.1":
+        status, body = get(base, "/policy", {"query": "give me the overall risk picture", "include_core": "true"})
+        ids = [r["clause_id"] for r in body.get("results", [])]
+        check("GET /policy include_core", status == 200 and ids[:5] == ["RP13", "RP15", "RP17", "RP19", "RP25"], ids)
+
     status, _ = get(base, "/policy", {"query": ""})
     check("blank policy query rejected", status == 422, status)
     print(f"All checks passed in {time.perf_counter() - started:.1f}s against {base}")

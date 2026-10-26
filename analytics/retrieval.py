@@ -51,6 +51,9 @@ POLICY_VERSION = os.environ.get("POLICY_VERSION", DEFAULT_POLICY_VERSION)
 DEFAULT_CHUNKING = {"v1": "clause", "v2.1": "paragraph"}
 EMBEDDING_MODEL_NAME = "all-MiniLM-L6-v2"
 MAX_QUERY_CHARS = 500
+# The limit and escalation clauses an overall risk question needs. Search alone often misses them:
+# broad questions match the worked examples (RP29, RP30) instead (eval/VALIDATION_REPORT.md).
+CORE_CLAUSES = {"v2.1": ("RP13", "RP15", "RP17", "RP19", "RP25"), "v1": ()}
 
 _V2_HEADING = re.compile(r"^## (RP\d{2}) (.+)$")
 _V1_HEADING = re.compile(r"^## (\d+)\. (.+)$")
@@ -205,8 +208,12 @@ def rank_clauses(
     ]
 
 
-def retrieve(query: str, top_k: int = 2, version: str = POLICY_VERSION) -> list[dict[str, Any]]:
+def retrieve(query: str, top_k: int = 2, version: str = POLICY_VERSION, include_core: bool = False) -> list[dict[str, Any]]:
     """Return the top_k policy clauses most similar to the query, with their full text.
+
+    include_core=True puts the core limit and escalation clauses (CORE_CLAUSES) first,
+    whatever the query, followed by the top_k search results that are not core clauses.
+    Each result's "included" says which way it got there ("core" or "search").
 
     Raises:
         InvalidQueryError: for a blank or overlong query, or top_k outside
@@ -221,8 +228,13 @@ def retrieve(query: str, top_k: int = 2, version: str = POLICY_VERSION) -> list[
         raise InvalidQueryError(f"top_k must be between 1 and {count}, got {top_k}.")
 
     clauses = {c.clause_id: c for c in parse_clauses(version)}
+    ranked = rank_clauses(query, version)
+    core = CORE_CLAUSES.get(version, ()) if include_core else ()
+    by_id = {hit["clause_id"]: hit for hit in ranked}
+    picked = [(by_id[c], "core") for c in core if c in by_id]
+    picked += [(hit, "search") for hit in [h for h in ranked if h["clause_id"] not in core][:top_k]]
     results = []
-    for hit in rank_clauses(query, version)[:top_k]:
+    for hit, how in picked:
         clause = clauses[hit["clause_id"]]
         results.append({
             "section": f"{clause.clause_id} {clause.title}",
@@ -231,5 +243,6 @@ def retrieve(query: str, top_k: int = 2, version: str = POLICY_VERSION) -> list[
             "text": clause.text,
             "matched_passage": hit["matched_passage"],
             "score": hit["score"],
+            "included": how,
         })
     return results

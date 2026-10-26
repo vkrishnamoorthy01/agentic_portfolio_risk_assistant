@@ -50,13 +50,18 @@ def get_portfolio_analytics(source: str = "latest") -> dict:
 
 
 @mcp.tool()
-def get_risk_policy_sections(query: str, top_k: int = 2) -> dict:
+def get_risk_policy_sections(query: str, top_k: int = 2, include_core: bool = False) -> dict:
     """Retrieve the risk policy sections most relevant to a natural-language
     query, e.g. position concentration limits, volatility thresholds, VaR
     limits, or drawdown escalation rules. Use this whenever a question needs
     the firm's policy limits, not the portfolio's numbers.
+
+    Set include_core=True for any question about the portfolio's overall
+    risk or limit compliance: it always adds the core limit and escalation
+    clauses (RP13, RP15, RP17, RP19, RP25), which a search can miss.
     """
-    return {"query": query, "results": retrieve(query, top_k=top_k)}
+    return {"query": query, "include_core": include_core,
+            "results": retrieve(query, top_k=top_k, include_core=include_core)}
 
 
 if __name__ == "__main__":

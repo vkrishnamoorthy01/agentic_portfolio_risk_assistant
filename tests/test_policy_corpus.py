@@ -96,3 +96,30 @@ def test_top_k_is_bounded_by_the_clause_count(top_k: int) -> None:
     # Validated before the model is loaded.
     with pytest.raises(InvalidQueryError, match="between 1 and 32"):
         retrieve("volatility", top_k=top_k, version="v2.1")
+
+
+def _fake_ranking(order: list[str]):  # stands in for the embedding search
+    def rank(query: str, version: str = "v2.1", *args, **kwargs) -> list[dict]:
+        return [{"clause_id": c, "passage_id": f"{c}.p1", "score": 1.0 - i / 100, "matched_passage": "..."}
+                for i, c in enumerate(order)]
+    return rank
+
+
+def test_include_core_puts_the_core_clauses_first_then_the_search(monkeypatch: pytest.MonkeyPatch) -> None:
+    others = [f"RP{i:02d}" for i in range(1, 33) if f"RP{i:02d}" not in retrieval.CORE_CLAUSES["v2.1"]]
+    # Search ranks the worked examples first and RP19 high, as broad questions tend to.
+    order = ["RP29", "RP30", "RP19"] + [c for c in others if c not in ("RP29", "RP30")] + ["RP13", "RP15", "RP17", "RP25"]
+    monkeypatch.setattr(retrieval, "rank_clauses", _fake_ranking(order))
+
+    results = retrieve("give me the overall risk picture", top_k=2, version="v2.1", include_core=True)
+
+    assert [r["clause_id"] for r in results] == ["RP13", "RP15", "RP17", "RP19", "RP25", "RP29", "RP30"]
+    assert [r["included"] for r in results] == ["core"] * 5 + ["search"] * 2
+
+
+def test_without_include_core_only_the_search_counts(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(retrieval, "rank_clauses", _fake_ranking([f"RP{i:02d}" for i in range(32, 0, -1)]))
+
+    results = retrieve("anything", top_k=2, version="v2.1")
+
+    assert [(r["clause_id"], r["included"]) for r in results] == [("RP32", "search"), ("RP31", "search")]

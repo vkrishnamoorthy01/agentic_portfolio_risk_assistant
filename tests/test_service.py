@@ -43,8 +43,9 @@ def add_download(data_dir: Path, source: str, last_session: str) -> None:
 
 @pytest.fixture
 def client(monkeypatch: pytest.MonkeyPatch, data_dir: Path) -> TestClient:
-    def _stub_retrieve(query: str, top_k: int = 2) -> list[dict]:
-        return [{"section": f"stub {i + 1}", "text": "stub text", "score": 1.0 - i / 10} for i in range(top_k)]
+    def _stub_retrieve(query: str, top_k: int = 2, include_core: bool = False) -> list[dict]:
+        core = [{"section": "stub core", "text": "core text", "score": 0.5}] if include_core else []
+        return core + [{"section": f"stub {i + 1}", "text": "stub text", "score": 1.0 - i / 10} for i in range(top_k)]
 
     monkeypatch.setattr(service, "retrieve", _stub_retrieve)
     return TestClient(service.app)
@@ -169,6 +170,14 @@ def test_policy_returns_the_requested_number_of_sections(client: TestClient) -> 
 
     assert response.status_code == 200
     assert len(response.json()["results"]) == 3
+
+
+def test_policy_passes_include_core_through(client: TestClient) -> None:
+    body = client.get("/policy", params={"query": "portfolio risk", "top_k": 2, "include_core": "true"}).json()
+
+    assert body["include_core"] is True
+    assert [r["section"] for r in body["results"]] == ["stub core", "stub 1", "stub 2"]
+    assert client.get("/policy", params={"query": "portfolio risk"}).json()["include_core"] is False
 
 
 @pytest.mark.parametrize(
