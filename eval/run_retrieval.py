@@ -9,6 +9,9 @@ Configurations (policy v2.1, all-MiniLM-L6-v2, in-memory cosine similarity):
              embedded truncated, exactly as the old code would have done.
   candidate  paragraph passages with a clause/title/version header (the
              service default since this integration).
+  candidate_core  candidate, with the core limit and escalation clauses
+             (RP13, RP15, RP17, RP19, RP25) put first, as /policy does with
+             include_core=true; the remaining clauses follow in search order.
 
 Relevance and denominators
   required_clauses are relevant (binary). supporting_clauses are not counted.
@@ -44,8 +47,8 @@ sys.path.insert(0, str(ROOT / "analytics"))
 import retrieval  # noqa: E402
 
 DATASET = ROOT / "eval" / "dataset"
-KS = (1, 2, 3, 5, 8)
-CONFIGS = {"baseline": "clause", "candidate": "paragraph"}
+KS = (1, 2, 3, 5, 7, 8)  # 7 = the 5 core clauses plus the service's default top_k of 2
+CONFIGS = {"baseline": ("clause", False), "candidate": ("paragraph", False), "candidate_core": ("paragraph", True)}
 
 
 def sha256_file(path: Path) -> str:
@@ -56,7 +59,7 @@ def git(*args: str) -> str:
     return subprocess.run(["git", *args], cwd=ROOT, capture_output=True, text=True).stdout.strip()
 
 
-def evaluate_case(case: dict, chunking: str, injected: dict) -> dict:
+def evaluate_case(case: dict, chunking: str, injected: dict, include_core: bool = False) -> dict:
     extra = None
     if case.get("injected_passage"):
         inj = injected[case["injected_passage"]]
@@ -64,6 +67,10 @@ def evaluate_case(case: dict, chunking: str, injected: dict) -> dict:
                                    inj["text"], f"{inj['title']}. {inj['text']}")]
     ranked = retrieval.rank_clauses(case["question"], "v2.1", chunking, extra_passages=extra, allow_truncation=True)
     order = [r["clause_id"] for r in ranked]
+    if include_core:
+        core = [c for c in retrieval.CORE_CLAUSES["v2.1"] if c in order]
+        order = core + [c for c in order if c not in core]
+        ranked = sorted(ranked, key=lambda r: order.index(r["clause_id"]))
     required = case["required_clauses"]
     ranks = {c: order.index(c) + 1 for c in required}
     row = {
@@ -118,8 +125,8 @@ def main() -> None:
     data_file = DATASET / f"cases_{args.split}.json"
     cases = json.loads(data_file.read_text(encoding="utf-8"))["cases"]
     injected = json.loads((DATASET / "fixtures.json").read_text(encoding="utf-8"))["injected_passages"]
-    chunking = CONFIGS[args.config]
-    rows = [evaluate_case(c, chunking, injected) for c in cases]
+    chunking, include_core = CONFIGS[args.config]
+    rows = [evaluate_case(c, chunking, injected, include_core) for c in cases]
     summary = summarize(rows)
 
     stamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
@@ -134,7 +141,7 @@ def main() -> None:
         "dataset_file": data_file.name, "dataset_sha256": sha256_file(data_file),
         "fixtures_sha256": sha256_file(DATASET / "fixtures.json"),
         "embedding_model": retrieval.EMBEDDING_MODEL_NAME, "max_seq_length": model.max_seq_length,
-        "config": args.config, "chunking": chunking, "ranking": "distinct clauses, each by its best passage",
+        "config": args.config, "chunking": chunking, "include_core": include_core, "ranking": "distinct clauses, each by its best passage",
         "passages": len(retrieval.build_passages("v2.1", chunking)), "ks": list(KS),
         "python": platform.python_version(),
         "packages": {p: metadata.version(p) for p in ("sentence-transformers", "torch", "transformers", "numpy")},
