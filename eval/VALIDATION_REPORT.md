@@ -1,6 +1,6 @@
 # Validation report: policy v2.1 integration and evaluation
 
-Branch `policy-v2-eval` (local, not pushed). Dates 2026-10-25 to 2026-10-26. Scope: the policy retrieval component of the Portfolio Risk Assistant, and the answering step measured by direct model calls. Nothing here measures the Make.com v3/v4 scenarios end to end, tool selection, or production readiness.
+Merged into `main` (49fa4d2), with the manual review added afterwards. Dates 2026-10-25 to 2026-10-26. Scope: the policy retrieval component of the Portfolio Risk Assistant, and the answering step measured by direct model calls. Nothing here measures the Make.com v3/v4 scenarios end to end, tool selection, or production readiness.
 
 ## 1. Implemented
 
@@ -38,7 +38,7 @@ Why DeepEval rather than Ragas: the questions that matter here are policy-specif
 | Sonnet 5.5 Faithfulness, held-out (2-answer cost check, then 28 retrieved-evidence answers) | Sonnet 5.5 | $0.83 | same folder, `judge_scores_sonnet_20261026T094300Z.jsonl`, `judge_scores_sonnet_20261026T094345Z.jsonl` |
 | Test suite | local only | 0 | 51 passed |
 
-All costs are at list prices. Total paid: about $4.20. Every generation and judge call completed: 0 failed calls, 0 judge metric errors, 0 answers not judged. Not executed: any manual review.
+All costs are at list prices. Total paid: about $4.20. Every generation and judge call completed: 0 failed calls, 0 judge metric errors, 0 answers not judged. The manual review was done by Vivek Krishnamoorthy on 2026-10-26: 14 held-out answers built from retrieved evidence (section 3).
 
 ## 3. Verified by saved evidence
 
@@ -107,6 +107,29 @@ Findings:
 - **Date arithmetic.** In dev answers that stated the data's age, 5 of 12 counts were wrong: two said 14 days and three said 45, against a true gap of 44.
 - **Adversarial inputs held.** All 7 adversarial cases passed the injection-resistance rubric in both conditions: injected limits, user instructions to hide breaches, another fund's figures, and requests for configuration. The canary never appeared in any of the 100 answers.
 
+### Manual review (human)
+Vivek Krishnamoorthy scored the 14 held-out answers built from retrieved evidence, blind to the judge scores. Sheet: `eval/manual_review/review_sheet_heldout_generate_20261026T081830Z.csv`.
+
+| Dimension | Human pass | Agreement with Sonnet judge |
+|---|---|---|
+| grounded (judge: Faithfulness) | 7/14 (50%) | 7/14 (50%) |
+| policy_applied_correctly | 9/13 (69%) | 10/13 (77%) |
+| complete | 8/14 (57%) | 10/14 (71%) |
+| no_forbidden_claim | 14/14 (100%) | 14/14 (100%) |
+| abstained_appropriately | 13/14 (93%) | 12/14 (86%) |
+| resisted_injection | 4/4 | 4/4 |
+| citations_correct (no judge metric) | 9/13 (69%) | n/a |
+
+- **The judge is more lenient than the human.** In 15 of the 16 disagreements, the human failed the answer and Sonnet passed it. The gap is widest on grounding: the human failed 7 of 14 answers, while Faithfulness gave every one 0.93 or more.
+- **The human review found errors no automated check caught:**
+  - **H09:** a "$" currency symbol for an amount that has no currency in the data.
+  - **H24:** a quotation attributed to RP20 that is actually in RP19.
+  - **H15:** RP14's sector/issuer rule applied to a single position, which RP13 governs.
+  - **H22:** a Red volatility reading and a drawdown breach described as a "soft warning or escalation band".
+- **Two findings in H22 are partly a sheet error.** The human marked citing "AMD-15" as invented, but AMD-15 is the label the model was shown for the injected passage. The sheet listed the internal ID (INJECTED-2) instead. The generator now writes the shown label. The human scores are reported as given.
+- **Criteria issues raised by the reviewer.** In 6 of 14 rows (H11, H14, H15, H17, H20, H21), required elements depend on clauses that were not in the retrieved evidence, so an answer could not meet them from what it was shown. The reference elements were written for complete evidence. A clarification was also noted on H09 (rounding precision), H23 (sector data absent from the output, not uncomputable) and H25 (the reviewer could not see the system prompt or canary).
+- **This is one reviewer on 14 answers.** That is enough to show the judge is lenient, not to put a precise number on how lenient.
+
 ### Judges
 - **Rubric bug, fixed before held-out.** Two rubric steps said "score 1", but GEval scores on 0-10, so answers meeting the criterion got 0.1. The dev Qwen scores and the first 4-answer Sonnet check used the old wording. Every score in the table above uses the corrected wording.
 - **Local Qwen 2.5 7B judge, used on dev only.** On the sanity check, its Faithfulness scores ranked a wrong answer above a correct one, so Faithfulness was not run. On dev answers it also made clear errors, such as scoring the strong D17 answer 0.0 on policy application with a quote that is not in the answer. It agreed with Sonnet's pass/fail call in 39 of 44 answers on policy application and completeness, and 41 of 44 on abstention. Sonnet was chosen on dev, before held-out was run.
@@ -117,14 +140,21 @@ Findings:
 
 | Item | Blocked on |
 |---|---|
-| Manual review of 14 held-out answers | your scores in `eval/manual_review/review_sheet_heldout_generate_20261026T081830Z.csv` |
-| Judge-vs-human agreement | your scores, then `python eval/make_review_sheet.py --run eval/results/generation/heldout_generate_20261026T081830Z --compare` |
+| golden-v2 dataset fixes (below) | budget for a re-run: about $3.10 for all 50 cases, or about $1.60 for the 26 that use portfolio numbers |
 | Faithfulness for the reference condition and dev | about $0.035 per answer (about $2.50 for the remaining 72 answers) |
 | Tool-selection evaluation | saved Make.com tool traces (none in the repo) |
 | Independent review of reference answers | a reviewer other than the drafting AI |
 | Retrieval change | your decision; would be tuned on dev and then scored once on a fresh held-out set, since this one has now been used |
 
 The retrieval change that the evidence supports, though it was not tested: for portfolio and overall questions, always include the core limit clauses (RP13, RP15, RP17, RP19, RP25 and RP08-RP10), and use semantic search only for the remainder. Raising top_k alone helps less: complete@5 is still 42-50% on held-out.
+
+**Known limitation: question dating.** Every case is dated 2026-10-25, but every fixture is dated 2026-09-11 (F8 is 2026-08-14). So every portfolio snapshot looked at least 44 days stale, not only the freshness cases. The over-abstention seen in H04 and H28 is therefore partly an artifact of the dataset, not purely a model weakness. The main findings do not depend on dates: retrieval misses, classification errors, injection resistance and canary handling.
+
+golden-v2 fixes, for the next re-run:
+- Date each question the session after its data, so that only the freshness cases (D11, H15) are stale.
+- Write required elements per evidence condition, or score the retrieved condition only on what its evidence supports. This was raised by the reviewer in 6 of 14 rows.
+- Add fresh held-out cases, since this held-out set has now been studied.
+- Show the reviewer the system prompt (with the canary masked) for the canary cases.
 
 ## Reproduce
 

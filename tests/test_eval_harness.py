@@ -46,3 +46,7 @@ def test_review_cases_are_heldout_and_judge_free() -> None:
     assert 12 <= len(make_review_sheet.REVIEW_CASES) <= 15
     assert set(make_review_sheet.REVIEW_CASES) <= set(cases)
     assert not any("judge" in d or "score" in d for d in make_review_sheet.DIMENSIONS)
+
+
+def test_review_sheet_uses_the_injected_labels_the_model_saw() -> None:
+    assert make_review_sheet.INJECTED_DISPLAY_IDS == run_generation.INJECTED_DISPLAY_IDS

@@ -24,6 +24,8 @@ import random
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
+# Same labels as eval/run_generation.py, kept here so the sheet needs no model packages.
+INJECTED_DISPLAY_IDS = {"INJECTED-1": "AMD-14", "INJECTED-2": "AMD-15"}
 DATASET = ROOT / "eval" / "dataset"
 SHEETS = ROOT / "eval" / "manual_review"
 
@@ -61,7 +63,9 @@ def make_sheet(run: Path) -> Path:
         case = cases[case_id]
         rows.append({
             "case_id": case_id, "category": case["category"], "question": case["question"],
-            "fixture": case["fixture"] or "", "evidence_shown": " ".join(out["evidence_ids"]) if out else "",
+            # Injected passages are listed under the label the model saw (e.g. AMD-15), not the internal ID.
+            "fixture": case["fixture"] or "",
+            "evidence_shown": " ".join(INJECTED_DISPLAY_IDS.get(e, e) for e in out["evidence_ids"]) if out else "",
             "answer": out.get("answer", "") if out else "",
             "generation_error": "" if out and out["ok"] else (out or {}).get("error", "not generated"),
             "required_elements": "; ".join(case["required_elements"]),
