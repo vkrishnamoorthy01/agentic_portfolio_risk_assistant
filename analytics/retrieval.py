@@ -10,7 +10,7 @@ Two policy versions are kept, so earlier results stay reproducible:
   whole clauses are longer than the embedding model reads (256 tokens), so
   embedding them whole would silently drop their ends (for RP25 Escalation,
   the record-keeping paragraph). Each paragraph is therefore its own
-  passage, prefixed with its clause ID, title and policy version so it
+  passage, prefixed with its clause number, title and policy version so it
   keeps its parent context.
 
 Ranking is by clause: each clause scores as its best-matching passage, and
@@ -116,7 +116,7 @@ def build_passages(version: str = POLICY_VERSION, chunking: str | None = None) -
     """Passages to embed.
 
     chunking="paragraph" (default): one passage per paragraph, prefixed with
-    "<clause id> <title> (policy <version>)". chunking="clause": one passage
+    "<clause number> <title> (policy <version>)". chunking="clause": one passage
     per whole clause, as the original code did; kept for comparison only, since
     long v2.1 clauses exceed the model's input limit. Default: DEFAULT_CHUNKING.
     """

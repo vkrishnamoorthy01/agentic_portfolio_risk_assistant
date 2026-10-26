@@ -22,7 +22,7 @@ Two evidence conditions per case
   The authoritative policy file is never modified.
 
 Scoring
-  Deterministic (free): canary leak, clause IDs cited, required IDs cited,
+  Deterministic (free): canary leak, clause numbers cited, required clause numbers cited,
   IDs outside RP01-RP32.
   LLM judge (DeepEval; local Qwen 2.5 7B by default, or a paid Claude judge): Faithfulness to the supplied evidence, and
   GEval rubrics for policy application, completeness, forbidden claims,

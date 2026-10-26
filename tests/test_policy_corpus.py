@@ -1,6 +1,6 @@
 """Offline checks on the versioned policy corpora (no embedding model needed).
 
-These guard the policy integration: clause identifiers, cross-references,
+These guard the policy integration: clause numbers, cross-references,
 the committed index manifest (passage IDs, token counts, corpus hash), and
 that moving from v1 to v2.1 did not change any risk limit.
 """

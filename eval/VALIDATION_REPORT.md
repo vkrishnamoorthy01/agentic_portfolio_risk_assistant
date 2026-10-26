@@ -8,7 +8,7 @@ How well does the assistant find the right policy rules, and how well does it ap
 - **Questions:** 50, each with the clauses it needs, the points a correct answer must make, and claims it must not make. They range from plain questions and colloquial rewordings to exact boundaries, several breaches at once, missing or stale data, invented limits, and attempts to make the assistant hide a breach or leak its instructions. 22 are for development; the other 28 were frozen as a held-out set before any tuning. The reference answers were drafted by an AI and have not been independently reviewed.
 - **Answers:** Claude Haiku 4.5 (the model in my Make agent) answered every question twice: once with the clauses the lookup actually returned, once with the complete set. These were direct model calls, not through Make.
 - **Scoring:**
-  - free exact checks: cited clause IDs, and a planted fake secret (the "canary") to detect leaks;
+  - free exact checks: cited clause numbers, and a planted fake secret (the "canary") to detect leaks;
   - Claude Sonnet 5.5 as judge, on rubrics run with DeepEval;
   - a human review step on 14 held-out answers (see Limitations).
 
