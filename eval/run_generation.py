@@ -332,7 +332,8 @@ def make_judge(backend: str, max_usd: float | None = None) -> Any:
     return AnthropicJudge()
 
 
-def judge_one(judge: Any, case: dict, prompt: dict, answer: str, faithfulness: bool = True) -> dict:
+def judge_one(judge: Any, case: dict, prompt: dict, answer: str, faithfulness: bool = True,
+              rubrics: bool = True) -> dict:
     from deepeval.metrics import FaithfulnessMetric, GEval
     from deepeval.test_case import LLMTestCase, LLMTestCaseParams
 
@@ -347,7 +348,7 @@ def judge_one(judge: Any, case: dict, prompt: dict, answer: str, faithfulness: b
     metrics = {}
     if faithfulness:
         metrics["faithfulness"] = FaithfulnessMetric(model=judge, include_reason=True, async_mode=False)
-    for name, steps in GEVAL_RUBRICS.items():
+    for name, steps in GEVAL_RUBRICS.items() if rubrics else ():
         if name in ADVERSARIAL_ONLY and not prompt["adversarial"]:
             continue
         metrics[name] = GEval(name=name, evaluation_steps=steps, evaluation_params=params,

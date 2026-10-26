@@ -7,7 +7,7 @@ Reads the run's prompts.jsonl and outputs.jsonl and writes
 judge_scores_<judge>_<stamp>.jsonl and rejudge_<judge>_<stamp>.json into the
 same folder; the original judge_scores.jsonl is left as it was. The same GEval
 rubrics are used. Faithfulness is off unless --faithfulness is given (it adds
-about three calls per answer). --max-usd stops a paid judge at a spending cap
+about three calls per answer); --only-faithfulness runs it without the rubrics. --max-usd stops a paid judge at a spending cap
 (list prices); answers not reached are listed in the manifest as not judged.
 """
 
@@ -35,6 +35,8 @@ def main() -> None:
     parser.add_argument("--judge", choices=sorted(rg.JUDGE_MODELS), required=True)
     parser.add_argument("--max-usd", type=float, help="spending cap for a paid judge")
     parser.add_argument("--faithfulness", action="store_true")
+    parser.add_argument("--only-faithfulness", action="store_true", help="skip the GEval rubrics")
+    parser.add_argument("--condition", choices=["retrieved", "reference"], help="judge only one evidence condition")
     parser.add_argument("--cases", help="comma-separated case IDs")
     args = parser.parse_args()
 
@@ -44,6 +46,8 @@ def main() -> None:
     cases = {c["case_id"]: c for c in json.loads((rg.DATASET / f"cases_{split}.json").read_text(encoding="utf-8"))["cases"]}
     prompts = {(p["case_id"], p["condition"]): p for p in read_jsonl(run / "prompts.jsonl")}
     outputs = [o for o in read_jsonl(run / "outputs.jsonl") if o.get("ok")]
+    if args.condition:
+        outputs = [o for o in outputs if o["condition"] == args.condition]
     if args.cases:
         wanted = set(args.cases.split(","))
         outputs = [o for o in outputs if o["case_id"] in wanted]
@@ -58,7 +62,9 @@ def main() -> None:
         "source_run_commit": run_manifest.get("git_commit"),
         "judge_backend": args.judge, "judge_model": rg.JUDGE_MODELS[args.judge],
         "judge_settings": rg.CLAUDE_JUDGE_SETTINGS.get(args.judge), "max_usd": args.max_usd,
-        "faithfulness_metric": "run" if args.faithfulness else "omitted (not requested)",
+        "faithfulness_metric": "run" if args.faithfulness or args.only_faithfulness else "omitted (not requested)",
+        "rubrics": "omitted (--only-faithfulness)" if args.only_faithfulness else "run",
+        "condition": args.condition or "both",
         "geval_rubrics": rg.GEVAL_RUBRICS, "answers": len(outputs), "errors": [], "not_judged": [],
         "scores_file": scores_path.name,
     }
@@ -70,7 +76,9 @@ def main() -> None:
                 manifest["not_judged"].append(list(key))
                 continue
             try:
-                scores = rg.judge_one(judge, cases[o["case_id"]], prompts[key], o["answer"], faithfulness=args.faithfulness)
+                scores = rg.judge_one(judge, cases[o["case_id"]], prompts[key], o["answer"],
+                                      faithfulness=args.faithfulness or args.only_faithfulness,
+                                      rubrics=not args.only_faithfulness)
             except rg.BudgetExceeded as exc:
                 stopped = str(exc)
                 manifest["not_judged"].append(list(key))
