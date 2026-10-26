@@ -41,15 +41,21 @@ def main(base: str) -> None:
 
     status, body = get(base, "/analytics")
     check("GET /analytics status", status == 200, status)
-    check("analytics labelled synthetic", body.get("data_source") == "synthetic", body.get("data_source"))
-    check("analytics as_of", body.get("as_of") == "2026-09-11", body.get("as_of"))
-    check("99% VaR % of NAV", body["historical_var_99_1d"]["pct_of_nav_pct"] == 2.11, body["historical_var_99_1d"])
-    check("20-day volatility %", body["vol_20d_annualized_pct"] == 22.88, body["vol_20d_annualized_pct"])
-    check("drawdown %", body["drawdown_from_peak_pct"] == -22.48, body["drawdown_from_peak_pct"])
+    source = body.get("data_source")
+    check("analytics names its price source", source in ("synthetic", "kite", "ibkr_paper", "ibkr_live"), source)
+    check("analytics as_of present", bool(body.get("as_of")), body.get("as_of"))
+    if source == "synthetic":  # the container and CI have no downloaded prices; the synthetic numbers are known
+        check("analytics as_of", body.get("as_of") == "2026-09-11", body.get("as_of"))
+        check("99% VaR % of NAV", body["historical_var_99_1d"]["pct_of_nav_pct"] == 2.11, body["historical_var_99_1d"])
+        check("20-day volatility %", body["vol_20d_annualized_pct"] == 22.88, body["vol_20d_annualized_pct"])
+        check("drawdown %", body["drawdown_from_peak_pct"] == -22.48, body["drawdown_from_peak_pct"])
 
     status, body = get(base, "/policy", {"query": "drawdown threshold from peak NAV", "top_k": 2})
     sections = [r["section"] for r in body.get("results", [])]
-    check("GET /policy real retrieval", status == 200 and sections[:1] == ["4. Drawdown Threshold"], sections)
+    # Policy v2.1 (clause RP19) on new deployments; older deployments serve the v1 headings.
+    expected = {"v2.1": "RP19 Drawdown Threshold"}.get(body.get("policy_version"), "4. Drawdown Threshold")
+    check("GET /policy real retrieval", status == 200 and sections[:1] == [expected],
+          f"policy {body.get('policy_version', 'v1')}: {sections}")
 
     status, _ = get(base, "/policy", {"query": ""})
     check("blank policy query rejected", status == 422, status)

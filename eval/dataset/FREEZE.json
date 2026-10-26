@@ -1,0 +1,11 @@
+{
+  "frozen_at_utc": "2026-10-25T17:06:59+00:00",
+  "frozen_before": "any retrieval run on the golden dataset, and any retrieval or prompt tuning",
+  "base_commit": "c70e11bc5a44f45e90e9fa1a648020494828aeeb",
+  "policy_v2_sha256": "77d72d3d4c2a884b6dba8f817f43aed30a47a3306f15d6081d92e762404e8786",
+  "sha256": {
+    "cases_heldout.json": "43e4775a09d513f6e9fde93b295dddbbd7557297bbf498376f9f0edfcadaadc6",
+    "fixtures.json": "34d7f5d352b06d3a5589fd13aa7104a33d22b7fd5aea443ff7aadd0532707b5c"
+  },
+  "rule": "Held-out cases are scored once per frozen configuration. Configurations are compared and chosen on dev only."
+}

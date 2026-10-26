@@ -1,0 +1,41 @@
+{
+  "policy_version": "v1",
+  "policy_file": "risk_policy_v1.md",
+  "corpus_sha256": "712f8199908da5bff93f4679d495b6a42e56b51441a0f9198ecaa567a97ffae7",
+  "embedding_model": "all-MiniLM-L6-v2",
+  "max_seq_length": 256,
+  "chunking": "clause",
+  "clause_count": 5,
+  "passages": [
+    {
+      "passage_id": "S1.p1",
+      "clause_id": "S1",
+      "title": "Position Concentration Limit",
+      "tokens": 85
+    },
+    {
+      "passage_id": "S2.p1",
+      "clause_id": "S2",
+      "title": "Volatility Thresholds",
+      "tokens": 93
+    },
+    {
+      "passage_id": "S3.p1",
+      "clause_id": "S3",
+      "title": "Value-at-Risk Limit",
+      "tokens": 69
+    },
+    {
+      "passage_id": "S4.p1",
+      "clause_id": "S4",
+      "title": "Drawdown Threshold",
+      "tokens": 63
+    },
+    {
+      "passage_id": "S5.p1",
+      "clause_id": "S5",
+      "title": "Escalation Procedure",
+      "tokens": 94
+    }
+  ]
+}

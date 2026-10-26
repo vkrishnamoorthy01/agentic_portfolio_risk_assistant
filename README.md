@@ -16,10 +16,10 @@ User -> Make.com (orchestrator) -> Portfolio Analytics tool (Python, determinist
      -> synthesized risk assessment -> human approval for any consequential action
 ```
 
-The human-approval step and the escalation logging in `policy/risk_policy.md` are controls the policy prescribes. Nothing in this repo enforces them: no approval gate, no escalation log. The assistant only reads numbers and policy text; it can't trade.
+The human-approval step and the escalation logging in the risk policy (`policy/risk_policy_v2.md`) are controls the policy prescribes. Nothing in this repo enforces them: no approval gate, no escalation log. The assistant only reads numbers and policy text; it can't trade.
 
 
-- **Market data**: synthetic daily prices for the 16 tickers (`data/generate_mock_data.py`), no live Kite dependency, swappable later.
+- **Market data**: daily closes for the 16 tickers from Kite, IBKR paper or IBKR live (downloaded by `scripts/refresh_prices.py`), or synthetic prices (`data/generate_mock_data.py`) where nothing has been downloaded.
 - **Analytics tool**: Python service ported from `risk_project`, exposing deterministic calculations (returns, vol, contributors, concentration, historical VaR) over HTTP. The LLM never does the arithmetic itself.
 - **RAG**: a short fictional risk policy document, retrieved via real embedding and cosine-similarity search, no vector DB needed at this scale.
 - **Orchestrator**: Make.com (free plan). V1 uses a fixed scenario; V4 swaps in Make's AI Agent module so the LLM decides which tools to call.
@@ -49,7 +49,24 @@ uvicorn service:app --reload
 
 Then hit `http://localhost:8000/analytics` or `http://localhost:8000/policy?query=...` directly. Wiring this into Make.com the way V1-V4 do also needs an ngrok tunnel and a Make scenario with an Anthropic API key configured in Make's UI. Both live outside this repo, so they're not reproducible just by cloning it.
 
-Every `/analytics` response is computed from the synthetic price file and says so: `data_source` is `synthetic` and `as_of` is the file's last date (2026-09-11). Bad inputs fail loudly instead of producing a number: a missing price or ticker returns a 500 with the reason, and an empty, overlong (over 500 characters) or out-of-range `/policy` request returns a 422.
+**Price data.** `/analytics?source=` (or the `PRICE_SOURCE` variable) picks the prices:
+
+| Source | What it reads |
+|---|---|
+| `latest` (default) | the most recent download; synthetic only if nothing has been downloaded |
+| `kite`, `ibkr_paper`, `ibkr_live` | `data/prices_<source>.csv`, written by `scripts/refresh_prices.py` |
+| `synthetic` | `data/mock_prices.csv` (generated, not market data) |
+
+Nothing is downloaded while serving a request: Kite needs a daily login and IBKR needs TWS running. To get the newest prices, run the refresh yourself, using the quant repo's price code (`QUANT_REPO`, default `D:\Personal_projects\quant_risk_and_trading_portfolio`) in an environment with its dependencies (`personal_projects`):
+
+```
+python scripts/refresh_prices.py --source ibkr_live               # TWS live, port 7496
+python scripts/refresh_prices.py --source ibkr_paper              # TWS paper, port 7497
+python scripts/refresh_prices.py --source kite                    # Kite login
+python scripts/refresh_prices.py --source ibkr_live --cache-only  # IBKR bars already stored, no connection
+```
+
+Market data only; nothing places orders. The downloads are gitignored, so Docker and CI serve synthetic prices. On Render, upload `prices_<source>.csv` and `prices_<source>.json` as secret files and set `PRICE_DATA_DIR=/etc/secrets`; re-upload them after each refresh. Every response names its source (`data_source`), its last session (`as_of`), what is downloaded (`downloaded_sources`), and in `data_note` how to fetch newer prices. Bad inputs fail loudly instead of producing a number: a missing price or ticker returns a 500 with the reason, and an empty, overlong (over 500 characters) or out-of-range `/policy` request returns a 422.
 
 **Docker:**
 
@@ -65,12 +82,14 @@ The image (`Dockerfile`, pinned dependencies in `requirements-service.txt`) inst
 
 **Deployment (Render, free tier):** `render.yaml` defines the service as a Render Blueprint. In Render: **New > Blueprint**, pick this repo, apply. Render builds the Dockerfile, checks `/health`, and redeploys each new commit on `main` only after its GitHub checks pass (`autoDeployTrigger: checksPass`). Free instances sleep after 15 minutes idle and take about a minute to wake. Verify a deployment with `python scripts/smoke_test.py https://<service>.onrender.com`.
 
+**Policy v2.1 and evaluation:** the retrieval corpus is now policy v2.1 (`policy/risk_policy_v2.md`, 32 clauses RP01-RP32), embedded as paragraph passages so no passage exceeds the model's 256-token limit; the original 5-section policy is kept as `policy/risk_policy_v1.md` (`POLICY_VERSION=v1`). `eval/` holds a 50-case golden dataset (dev and frozen held-out), a retrieval evaluation, a generation-evaluation harness (DeepEval, not yet run; paid calls need `requirements-eval.txt` and an API key) and a manual-review sheet. Results and what is still pending: `eval/VALIDATION_REPORT.md`.
+
 ## Status
 
 - [x] V1 step 1: project scaffold + synthetic 16-stock daily price data (`data/mock_prices.csv`, 260 trading days)
 - [x] V1: bare Make scenario, one fixed LLM call (Webhooks > Custom webhook -> Anthropic Claude "Simple Text Prompt" -> Webhooks > Webhook response). Working end-to-end.
 - [x] V2: `analytics/service.py` FastAPI app ported from `risk_project`, exposing `GET /analytics` (portfolio return, 20-day vol, 99% historical VaR, drawdown, concentration, top contributors/detractors, individual returns, all percentage fields pre-scaled with `_pct` suffixes), tunneled via ngrok, wired into the Make scenario. Working end-to-end, verified against live output.
-- [x] V3: `policy/risk_policy.md` drafted and `analytics/retrieval.py` built: chunking (split on `## ` headers) + local embeddings (`sentence-transformers`, `all-MiniLM-L6-v2`) + in-memory cosine-similarity search, exposed as `GET /policy?query=...`. Claude now explicitly states breach/no-breach per policy section (verified live: correctly flagged volatility as RED-breach and VaR as compliant, citing the right sections).
+- [x] V3: `policy/risk_policy.md` (now kept as `policy/risk_policy_v1.md`) drafted and `analytics/retrieval.py` built: chunking (split on `## ` headers) + local embeddings (`sentence-transformers`, `all-MiniLM-L6-v2`) + in-memory cosine-similarity search, exposed as `GET /policy?query=...`. Claude now explicitly states breach/no-breach per policy section (verified live: correctly flagged volatility as RED-breach and VaR as compliant, citing the right sections).
 - [x] V4: separate Make scenario `Agentic_portfolio_risk_assistant_v4`. Webhooks -> Make AI Agent (Claude Haiku 4.5; two tools: `get_portfolio_analytics`, `get_risk_policy_sections`) -> Webhooks. Verified end-to-end with three tool-selective questions, see below.
 - [x] V5: `analytics/mcp_server.py`, same logic exposed as two MCP tools over stdio, registered via `.mcp.json`, consumed by Claude Code. Tool discovery happened automatically and invocation worked live in-conversation, see below.
 

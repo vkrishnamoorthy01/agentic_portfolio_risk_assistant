@@ -1,0 +1,599 @@
+{
+  "policy_version": "v2.1",
+  "policy_file": "risk_policy_v2.md",
+  "corpus_sha256": "636ff438a24768b10ecb0d846bbbb28dcce6edbeab0a3853aa1f128ef989bbf7",
+  "embedding_model": "all-MiniLM-L6-v2",
+  "max_seq_length": 256,
+  "chunking": "paragraph",
+  "clause_count": 32,
+  "passages": [
+    {
+      "passage_id": "RP01.p1",
+      "clause_id": "RP01",
+      "title": "Document status and purpose",
+      "tokens": 82
+    },
+    {
+      "passage_id": "RP01.p2",
+      "clause_id": "RP01",
+      "title": "Document status and purpose",
+      "tokens": 74
+    },
+    {
+      "passage_id": "RP01.p3",
+      "clause_id": "RP01",
+      "title": "Document status and purpose",
+      "tokens": 102
+    },
+    {
+      "passage_id": "RP02.p1",
+      "clause_id": "RP02",
+      "title": "Authority and controlled use",
+      "tokens": 97
+    },
+    {
+      "passage_id": "RP02.p2",
+      "clause_id": "RP02",
+      "title": "Authority and controlled use",
+      "tokens": 84
+    },
+    {
+      "passage_id": "RP02.p3",
+      "clause_id": "RP02",
+      "title": "Authority and controlled use",
+      "tokens": 69
+    },
+    {
+      "passage_id": "RP03.p1",
+      "clause_id": "RP03",
+      "title": "Manual navigation and clause references",
+      "tokens": 81
+    },
+    {
+      "passage_id": "RP03.p2",
+      "clause_id": "RP03",
+      "title": "Manual navigation and clause references",
+      "tokens": 115
+    },
+    {
+      "passage_id": "RP03.p3",
+      "clause_id": "RP03",
+      "title": "Manual navigation and clause references",
+      "tokens": 106
+    },
+    {
+      "passage_id": "RP04.p1",
+      "clause_id": "RP04",
+      "title": "Applicability and portfolio coverage",
+      "tokens": 110
+    },
+    {
+      "passage_id": "RP04.p2",
+      "clause_id": "RP04",
+      "title": "Applicability and portfolio coverage",
+      "tokens": 97
+    },
+    {
+      "passage_id": "RP04.p3",
+      "clause_id": "RP04",
+      "title": "Applicability and portfolio coverage",
+      "tokens": 75
+    },
+    {
+      "passage_id": "RP05.p1",
+      "clause_id": "RP05",
+      "title": "Board oversight and independent challenge",
+      "tokens": 81
+    },
+    {
+      "passage_id": "RP05.p2",
+      "clause_id": "RP05",
+      "title": "Board oversight and independent challenge",
+      "tokens": 83
+    },
+    {
+      "passage_id": "RP05.p3",
+      "clause_id": "RP05",
+      "title": "Board oversight and independent challenge",
+      "tokens": 93
+    },
+    {
+      "passage_id": "RP06.p1",
+      "clause_id": "RP06",
+      "title": "Operational ownership and review cadence",
+      "tokens": 80
+    },
+    {
+      "passage_id": "RP06.p2",
+      "clause_id": "RP06",
+      "title": "Operational ownership and review cadence",
+      "tokens": 84
+    },
+    {
+      "passage_id": "RP06.p3",
+      "clause_id": "RP06",
+      "title": "Operational ownership and review cadence",
+      "tokens": 100
+    },
+    {
+      "passage_id": "RP07.p1",
+      "clause_id": "RP07",
+      "title": "Mandate permissions and investment universe",
+      "tokens": 81
+    },
+    {
+      "passage_id": "RP07.p2",
+      "clause_id": "RP07",
+      "title": "Mandate permissions and investment universe",
+      "tokens": 90
+    },
+    {
+      "passage_id": "RP07.p3",
+      "clause_id": "RP07",
+      "title": "Mandate permissions and investment universe",
+      "tokens": 97
+    },
+    {
+      "passage_id": "RP08.p1",
+      "clause_id": "RP08",
+      "title": "Risk coverage and evidence hierarchy",
+      "tokens": 90
+    },
+    {
+      "passage_id": "RP08.p2",
+      "clause_id": "RP08",
+      "title": "Risk coverage and evidence hierarchy",
+      "tokens": 86
+    },
+    {
+      "passage_id": "RP08.p3",
+      "clause_id": "RP08",
+      "title": "Risk coverage and evidence hierarchy",
+      "tokens": 92
+    },
+    {
+      "passage_id": "RP09.p1",
+      "clause_id": "RP09",
+      "title": "Data provenance and freshness",
+      "tokens": 81
+    },
+    {
+      "passage_id": "RP09.p2",
+      "clause_id": "RP09",
+      "title": "Data provenance and freshness",
+      "tokens": 80
+    },
+    {
+      "passage_id": "RP09.p3",
+      "clause_id": "RP09",
+      "title": "Data provenance and freshness",
+      "tokens": 101
+    },
+    {
+      "passage_id": "RP10.p1",
+      "clause_id": "RP10",
+      "title": "Price quality and valuation exceptions",
+      "tokens": 83
+    },
+    {
+      "passage_id": "RP10.p2",
+      "clause_id": "RP10",
+      "title": "Price quality and valuation exceptions",
+      "tokens": 83
+    },
+    {
+      "passage_id": "RP10.p3",
+      "clause_id": "RP10",
+      "title": "Price quality and valuation exceptions",
+      "tokens": 107
+    },
+    {
+      "passage_id": "RP11.p1",
+      "clause_id": "RP11",
+      "title": "Portfolio return and volatility conventions",
+      "tokens": 87
+    },
+    {
+      "passage_id": "RP11.p2",
+      "clause_id": "RP11",
+      "title": "Portfolio return and volatility conventions",
+      "tokens": 93
+    },
+    {
+      "passage_id": "RP11.p3",
+      "clause_id": "RP11",
+      "title": "Portfolio return and volatility conventions",
+      "tokens": 98
+    },
+    {
+      "passage_id": "RP12.p1",
+      "clause_id": "RP12",
+      "title": "Units precision and threshold decisions",
+      "tokens": 89
+    },
+    {
+      "passage_id": "RP12.p2",
+      "clause_id": "RP12",
+      "title": "Units precision and threshold decisions",
+      "tokens": 91
+    },
+    {
+      "passage_id": "RP12.p3",
+      "clause_id": "RP12",
+      "title": "Units precision and threshold decisions",
+      "tokens": 102
+    },
+    {
+      "passage_id": "RP13.p1",
+      "clause_id": "RP13",
+      "title": "Position Concentration Limit",
+      "tokens": 95
+    },
+    {
+      "passage_id": "RP13.p2",
+      "clause_id": "RP13",
+      "title": "Position Concentration Limit",
+      "tokens": 77
+    },
+    {
+      "passage_id": "RP13.p3",
+      "clause_id": "RP13",
+      "title": "Position Concentration Limit",
+      "tokens": 107
+    },
+    {
+      "passage_id": "RP14.p1",
+      "clause_id": "RP14",
+      "title": "Concentration review and aggregate exposures",
+      "tokens": 79
+    },
+    {
+      "passage_id": "RP14.p2",
+      "clause_id": "RP14",
+      "title": "Concentration review and aggregate exposures",
+      "tokens": 97
+    },
+    {
+      "passage_id": "RP14.p3",
+      "clause_id": "RP14",
+      "title": "Concentration review and aggregate exposures",
+      "tokens": 110
+    },
+    {
+      "passage_id": "RP15.p1",
+      "clause_id": "RP15",
+      "title": "Volatility Thresholds",
+      "tokens": 90
+    },
+    {
+      "passage_id": "RP15.p2",
+      "clause_id": "RP15",
+      "title": "Volatility Thresholds",
+      "tokens": 72
+    },
+    {
+      "passage_id": "RP15.p3",
+      "clause_id": "RP15",
+      "title": "Volatility Thresholds",
+      "tokens": 106
+    },
+    {
+      "passage_id": "RP16.p1",
+      "clause_id": "RP16",
+      "title": "Volatility review and response",
+      "tokens": 78
+    },
+    {
+      "passage_id": "RP16.p2",
+      "clause_id": "RP16",
+      "title": "Volatility review and response",
+      "tokens": 95
+    },
+    {
+      "passage_id": "RP16.p3",
+      "clause_id": "RP16",
+      "title": "Volatility review and response",
+      "tokens": 104
+    },
+    {
+      "passage_id": "RP17.p1",
+      "clause_id": "RP17",
+      "title": "Value at Risk Limit",
+      "tokens": 86
+    },
+    {
+      "passage_id": "RP17.p2",
+      "clause_id": "RP17",
+      "title": "Value at Risk Limit",
+      "tokens": 90
+    },
+    {
+      "passage_id": "RP17.p3",
+      "clause_id": "RP17",
+      "title": "Value at Risk Limit",
+      "tokens": 96
+    },
+    {
+      "passage_id": "RP18.p1",
+      "clause_id": "RP18",
+      "title": "VaR methodology and validation",
+      "tokens": 78
+    },
+    {
+      "passage_id": "RP18.p2",
+      "clause_id": "RP18",
+      "title": "VaR methodology and validation",
+      "tokens": 78
+    },
+    {
+      "passage_id": "RP18.p3",
+      "clause_id": "RP18",
+      "title": "VaR methodology and validation",
+      "tokens": 124
+    },
+    {
+      "passage_id": "RP19.p1",
+      "clause_id": "RP19",
+      "title": "Drawdown Threshold",
+      "tokens": 91
+    },
+    {
+      "passage_id": "RP19.p2",
+      "clause_id": "RP19",
+      "title": "Drawdown Threshold",
+      "tokens": 91
+    },
+    {
+      "passage_id": "RP19.p3",
+      "clause_id": "RP19",
+      "title": "Drawdown Threshold",
+      "tokens": 94
+    },
+    {
+      "passage_id": "RP20.p1",
+      "clause_id": "RP20",
+      "title": "Drawdown monitoring and recovery",
+      "tokens": 83
+    },
+    {
+      "passage_id": "RP20.p2",
+      "clause_id": "RP20",
+      "title": "Drawdown monitoring and recovery",
+      "tokens": 97
+    },
+    {
+      "passage_id": "RP20.p3",
+      "clause_id": "RP20",
+      "title": "Drawdown monitoring and recovery",
+      "tokens": 109
+    },
+    {
+      "passage_id": "RP21.p1",
+      "clause_id": "RP21",
+      "title": "Liquidity risk and cash obligations",
+      "tokens": 82
+    },
+    {
+      "passage_id": "RP21.p2",
+      "clause_id": "RP21",
+      "title": "Liquidity risk and cash obligations",
+      "tokens": 95
+    },
+    {
+      "passage_id": "RP21.p3",
+      "clause_id": "RP21",
+      "title": "Liquidity risk and cash obligations",
+      "tokens": 108
+    },
+    {
+      "passage_id": "RP22.p1",
+      "clause_id": "RP22",
+      "title": "Stress testing and scenario governance",
+      "tokens": 88
+    },
+    {
+      "passage_id": "RP22.p2",
+      "clause_id": "RP22",
+      "title": "Stress testing and scenario governance",
+      "tokens": 81
+    },
+    {
+      "passage_id": "RP22.p3",
+      "clause_id": "RP22",
+      "title": "Stress testing and scenario governance",
+      "tokens": 101
+    },
+    {
+      "passage_id": "RP23.p1",
+      "clause_id": "RP23",
+      "title": "Operational risk and change control",
+      "tokens": 76
+    },
+    {
+      "passage_id": "RP23.p2",
+      "clause_id": "RP23",
+      "title": "Operational risk and change control",
+      "tokens": 92
+    },
+    {
+      "passage_id": "RP23.p3",
+      "clause_id": "RP23",
+      "title": "Operational risk and change control",
+      "tokens": 101
+    },
+    {
+      "passage_id": "RP24.p1",
+      "clause_id": "RP24",
+      "title": "Service interruption and business continuity",
+      "tokens": 71
+    },
+    {
+      "passage_id": "RP24.p2",
+      "clause_id": "RP24",
+      "title": "Service interruption and business continuity",
+      "tokens": 91
+    },
+    {
+      "passage_id": "RP24.p3",
+      "clause_id": "RP24",
+      "title": "Service interruption and business continuity",
+      "tokens": 119
+    },
+    {
+      "passage_id": "RP25.p1",
+      "clause_id": "RP25",
+      "title": "Escalation Procedure",
+      "tokens": 112
+    },
+    {
+      "passage_id": "RP25.p2",
+      "clause_id": "RP25",
+      "title": "Escalation Procedure",
+      "tokens": 104
+    },
+    {
+      "passage_id": "RP25.p3",
+      "clause_id": "RP25",
+      "title": "Escalation Procedure",
+      "tokens": 100
+    },
+    {
+      "passage_id": "RP26.p1",
+      "clause_id": "RP26",
+      "title": "Exceptions remediation and closure",
+      "tokens": 99
+    },
+    {
+      "passage_id": "RP26.p2",
+      "clause_id": "RP26",
+      "title": "Exceptions remediation and closure",
+      "tokens": 101
+    },
+    {
+      "passage_id": "RP26.p3",
+      "clause_id": "RP26",
+      "title": "Exceptions remediation and closure",
+      "tokens": 99
+    },
+    {
+      "passage_id": "RP27.p1",
+      "clause_id": "RP27",
+      "title": "Permitted analytical assistant use",
+      "tokens": 85
+    },
+    {
+      "passage_id": "RP27.p2",
+      "clause_id": "RP27",
+      "title": "Permitted analytical assistant use",
+      "tokens": 81
+    },
+    {
+      "passage_id": "RP27.p3",
+      "clause_id": "RP27",
+      "title": "Permitted analytical assistant use",
+      "tokens": 99
+    },
+    {
+      "passage_id": "RP28.p1",
+      "clause_id": "RP28",
+      "title": "Untrusted content and information protection",
+      "tokens": 87
+    },
+    {
+      "passage_id": "RP28.p2",
+      "clause_id": "RP28",
+      "title": "Untrusted content and information protection",
+      "tokens": 89
+    },
+    {
+      "passage_id": "RP28.p3",
+      "clause_id": "RP28",
+      "title": "Untrusted content and information protection",
+      "tokens": 104
+    },
+    {
+      "passage_id": "RP29.p1",
+      "clause_id": "RP29",
+      "title": "Worked multi asset portfolio assessment",
+      "tokens": 106
+    },
+    {
+      "passage_id": "RP29.p2",
+      "clause_id": "RP29",
+      "title": "Worked multi asset portfolio assessment",
+      "tokens": 100
+    },
+    {
+      "passage_id": "RP29.p3",
+      "clause_id": "RP29",
+      "title": "Worked multi asset portfolio assessment",
+      "tokens": 100
+    },
+    {
+      "passage_id": "RP30.p1",
+      "clause_id": "RP30",
+      "title": "Boundary and missing evidence examples",
+      "tokens": 97
+    },
+    {
+      "passage_id": "RP30.p2",
+      "clause_id": "RP30",
+      "title": "Boundary and missing evidence examples",
+      "tokens": 96
+    },
+    {
+      "passage_id": "RP30.p3",
+      "clause_id": "RP30",
+      "title": "Boundary and missing evidence examples",
+      "tokens": 105
+    },
+    {
+      "passage_id": "RP31.p1",
+      "clause_id": "RP31",
+      "title": "Policy maintenance training and assurance",
+      "tokens": 77
+    },
+    {
+      "passage_id": "RP31.p2",
+      "clause_id": "RP31",
+      "title": "Policy maintenance training and assurance",
+      "tokens": 82
+    },
+    {
+      "passage_id": "RP31.p3",
+      "clause_id": "RP31",
+      "title": "Policy maintenance training and assurance",
+      "tokens": 104
+    },
+    {
+      "passage_id": "RP32.p1",
+      "clause_id": "RP32",
+      "title": "Reference framework and document history",
+      "tokens": 96
+    },
+    {
+      "passage_id": "RP32.p2",
+      "clause_id": "RP32",
+      "title": "Reference framework and document history",
+      "tokens": 112
+    },
+    {
+      "passage_id": "RP32.p3",
+      "clause_id": "RP32",
+      "title": "Reference framework and document history",
+      "tokens": 87
+    },
+    {
+      "passage_id": "RP32.p4",
+      "clause_id": "RP32",
+      "title": "Reference framework and document history",
+      "tokens": 121
+    },
+    {
+      "passage_id": "RP32.p5",
+      "clause_id": "RP32",
+      "title": "Reference framework and document history",
+      "tokens": 58
+    }
+  ]
+}

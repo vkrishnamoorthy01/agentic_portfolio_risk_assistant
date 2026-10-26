@@ -42,3 +42,10 @@ desktop.ini
 .pytest_cache/
 .mypy_cache/
 .ruff_cache/
+
+# DeepEval local cache
+.deepeval/
+
+# Market price downloads (scripts/refresh_prices.py): exchange data, kept local
+data/prices_*.csv
+data/prices_*.json
