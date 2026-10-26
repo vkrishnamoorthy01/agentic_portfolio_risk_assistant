@@ -83,19 +83,27 @@ def make_sheet(run: Path) -> Path:
     return path
 
 
-def judge_file(run: Path) -> Path:
-    """The newest Claude re-judge scores in the run, else the run's own judge scores."""
+def judge_files(run: Path) -> list[Path]:
+    """The Claude re-judge score files in the run, oldest first, else the run's own judge scores.
+
+    Re-judges can cover different metrics (rubrics in one, Faithfulness in another), so
+    they are merged; a later file's score for the same answer and metric wins.
+    """
     rejudged = sorted(run.glob("judge_scores_sonnet_*.jsonl")) or sorted(run.glob("judge_scores_opus_*.jsonl"))
-    return rejudged[-1] if rejudged else run / "judge_scores.jsonl"
+    return rejudged or [run / "judge_scores.jsonl"]
 
 
 def compare(run: Path) -> None:
     path = SHEETS / f"review_sheet_{run.name}.csv"
     with path.open(encoding="utf-8", newline="") as f:
         human = {r["case_id"]: r for r in csv.DictReader(f)}
-    scores = judge_file(run)
-    print("judge scores:", scores.name)
-    judged = {j["case_id"]: j["scores"] for j in read_jsonl(scores) if j["condition"] == REVIEW_CONDITION}
+    files = judge_files(run)
+    print("judge scores:", ", ".join(f.name for f in files))
+    judged: dict[str, dict] = {}
+    for f in files:
+        for j in read_jsonl(f):
+            if j["condition"] == REVIEW_CONDITION:
+                judged.setdefault(j["case_id"], {}).update(j["scores"])
     filled = [r for r in human.values() if any(r[d].strip() for d in DIMENSIONS)]
     if not filled:
         print("Comparison pending: no human scores in", path.relative_to(ROOT))

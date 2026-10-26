@@ -34,10 +34,11 @@ Why DeepEval rather than Ragas: the questions that matter here are policy-specif
 | Sonnet 5.5 checks on 4 dev answers (before and after the rubric fix) | Sonnet 5.5 | $0.27 | same folder, `judge_scores_sonnet_*0759*`, `*0801*` |
 | Sonnet 5.5 re-judge, dev (44 answers) | Sonnet 5.5 | $1.18 | same folder, `judge_scores_sonnet_20261026T080257Z.jsonl` |
 | Generation, held-out (56 answers), once | Haiku 4.5 | $0.146 | `eval/results/generation/heldout_generate_20261026T081830Z` |
-| Sonnet 5.5 re-judge, held-out (56 answers), once | Sonnet 5.5 | $1.65 | same folder, `judge_scores_sonnet_*` |
+| Sonnet 5.5 re-judge, held-out (56 answers), once | Sonnet 5.5 | $1.65 | same folder, `judge_scores_sonnet_20261026T082235Z.jsonl` |
+| Sonnet 5.5 Faithfulness, held-out (2-answer cost check, then 28 retrieved-evidence answers) | Sonnet 5.5 | $0.83 | same folder, `judge_scores_sonnet_20261026T094300Z.jsonl`, `judge_scores_sonnet_20261026T094345Z.jsonl` |
 | Test suite | local only | 0 | 51 passed |
 
-All costs are at list prices. Total paid: about $3.35. Every generation and judge call completed: 0 failed calls, 0 judge metric errors, 0 answers not judged. Not executed: any manual review.
+All costs are at list prices. Total paid: about $4.20. Every generation and judge call completed: 0 failed calls, 0 judge metric errors, 0 answers not judged. Not executed: any manual review.
 
 ## 3. Verified by saved evidence
 
@@ -109,7 +110,7 @@ Findings:
 ### Judges
 - **Rubric bug, fixed before held-out.** Two rubric steps said "score 1", but GEval scores on 0-10, so answers meeting the criterion got 0.1. The dev Qwen scores and the first 4-answer Sonnet check used the old wording. Every score in the table above uses the corrected wording.
 - **Local Qwen 2.5 7B judge, used on dev only.** On the sanity check, its Faithfulness scores ranked a wrong answer above a correct one, so Faithfulness was not run. On dev answers it also made clear errors, such as scoring the strong D17 answer 0.0 on policy application with a quote that is not in the answer. It agreed with Sonnet's pass/fail call in 39 of 44 answers on policy application and completeness, and 41 of 44 on abstention. Sonnet was chosen on dev, before held-out was run.
-- **Faithfulness was not run with either judge.** Grounding is covered partly by policy_application, the deterministic clause-ID checks and the manual review's "grounded" column.
+- **Faithfulness, with Sonnet 5.5, on the 28 held-out answers built from retrieved evidence only.** The budget did not cover the reference condition or dev. All 28 pass, and 27 of 28 score a perfect 1.0. That includes H11, which applies the wrong rule (it calls a 9.1% position "within limit") while every statement in it is supported by the evidence it was shown. Faithfulness measures whether claims are supported by the context, not whether the policy was applied correctly. Haiku's errors here are of the second kind, so the policy_application rubric and the hand checks are what catch them.
 - **Sonnet's reasons were spot-checked, not systematically reviewed.** Its scores for D04, D08, D10, D17 (both conditions), H11 and H12 were checked by hand against the answers, and all seven matched. That is not a measured agreement rate; the manual review provides one.
 
 ## 4. Pending
@@ -118,7 +119,7 @@ Findings:
 |---|---|
 | Manual review of 14 held-out answers | your scores in `eval/manual_review/review_sheet_heldout_generate_20261026T081830Z.csv` |
 | Judge-vs-human agreement | your scores, then `python eval/make_review_sheet.py --run eval/results/generation/heldout_generate_20261026T081830Z --compare` |
-| Faithfulness with a Claude judge | a decision to spend about $1-2 on it |
+| Faithfulness for the reference condition and dev | about $0.035 per answer (about $2.50 for the remaining 72 answers) |
 | Tool-selection evaluation | saved Make.com tool traces (none in the repo) |
 | Independent review of reference answers | a reviewer other than the drafting AI |
 | Retrieval change | your decision; would be tuned on dev and then scored once on a fresh held-out set, since this one has now been used |

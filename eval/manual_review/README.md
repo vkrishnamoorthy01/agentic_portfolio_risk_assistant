@@ -27,7 +27,7 @@ Status: **not started.** No answers have been generated yet, so there is nothing
 
 1. After an authorized generation run, build the sheet:
    `python eval/make_review_sheet.py --run eval/results/generation/heldout_generate_<stamp>`
-2. Open `eval/manual_review/review_sheet_<run>.csv`. Rows are shuffled. Judge scores and model names are not in the sheet; don't open any `judge_scores*.jsonl` or `rejudge_*.json` file in the run folder until you have finished. The judge's "grounded" counterpart (Faithfulness) was not run, so that column has no judge comparison.
+2. Open `eval/manual_review/review_sheet_<run>.csv`. Rows are shuffled. Judge scores and model names are not in the sheet; don't open any `judge_scores*.jsonl` or `rejudge_*.json` file in the run folder until you have finished. The "grounded" column is compared with the judge's Faithfulness score.
 3. For each dimension enter Y, N or NA:
    - **grounded**: every factual statement is supported by the evidence or analytics shown
    - **policy_applied_correctly**: thresholds, bands, inclusivity, signs and units are right
