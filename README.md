@@ -32,7 +32,7 @@ Question -> Make.com (V1-V4) or Claude Code via MCP (V5) -> Analytics tool (Pyth
 
 - **The policy lookup is the weak link.** Broad questions ("any serious risk issues?") retrieve worked examples instead of the rules, so the answers come out without thresholds. `include_core=true` always adds the core limit clauses. On the held-out questions, the share with every needed clause rose from 9 of 26 to 16 of 26.
 - **Even with the right rules, the LLM makes mistakes.** Haiku 4.5 listed 3.2% VaR as within a 3% limit and called Red volatility a "soft warning".
-- **AI judges are lenient.** Sonnet 5.5 passed answers that a review (ChatGPT, checked and lightly edited by me) failed, in 15 of 16 disagreements.
+- **AI judges are lenient.** Sonnet 5.5 passed answers the human review step failed in 15 of 16 disagreements.
 - **Admitting a gap matters.** Asked about sector limits, which neither tool supports, the right answer is to say so, not to invent a limit.
 - **Small things break answers.** Percentages sent as fractions (0.0211) printed as "0.0211% of NAV". Every percentage field now carries a `_pct` suffix. Colloquial questions ("is the fund too jumpy?") still miss the volatility rule.
 

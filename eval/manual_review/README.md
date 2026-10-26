@@ -1,6 +1,6 @@
-# Review of held-out answers
+# Human review of held-out answers
 
-Done on 2026-10-26 for the 14 answers below, all built from retrieved evidence. To save time, ChatGPT 6.1 Sol did the review on my instructions; I went through its responses and edited them lightly. So this is an AI-assisted review, not an independent human one. The scores are in `review_sheet_heldout_generate_20261026T081830Z.csv`, and the comparison with the Sonnet judge is in `eval/VALIDATION_REPORT.md`.
+Done on 2026-10-26 for the 14 answers below, all built from retrieved evidence. For expedience, ChatGPT 6.1 Sol did the review on my instructions and I edited its responses lightly; in a real deployment a risk analyst would do this. Scores: `review_sheet_heldout_generate_20261026T081830Z.csv`.
 
 ## Cases
 

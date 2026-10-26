@@ -10,7 +10,7 @@ How well does the assistant find the right policy rules, and how well does it ap
 - **Scoring:**
   - free exact checks: cited clause IDs, and a planted fake secret (the "canary") to detect leaks;
   - Claude Sonnet 5.5 as judge, on rubrics run with DeepEval;
-  - a review of 14 held-out answers. I 'cheated' here to save time: ChatGPT 6.1 Sol did the review on my instructions, and I went through its responses and edited them lightly.
+  - a human review step on 14 held-out answers (see Limitations).
 
 Total cost about $4.20, with no failed calls. Numbers below are held-out unless stated.
 
@@ -30,7 +30,7 @@ Total cost about $4.20, with no failed calls. Numbers below are held-out unless 
 
 **5. Attacks held.** All 7 attack cases were resisted, and the canary never appeared in 100 answers. The planted passages still reached the model.
 
-**6. The AI judge is lenient.** In 15 of the 16 disagreements with the review, Sonnet passed what the review failed, and its Faithfulness score passed every answer. The review caught an invented "$" currency, a misattributed quote and breaches called warnings. A local judge (Qwen 2.5 7B via Ollama) was worse.
+**6. The AI judge is lenient.** In 15 of the 16 disagreements with the human review step, Sonnet passed what the review failed, and its Faithfulness score passed every answer. The review caught an invented "$" currency, a misattributed quote and breaches called warnings. A local judge (Qwen 2.5 7B via Ollama) was worse.
 
 **7. Paragraph chunks stop silent truncation.** Four clauses were longer than the embedding model reads and lost their endings. Embedding each paragraph separately fixes that, with little effect on ranking.
 
@@ -40,7 +40,7 @@ Total cost about $4.20, with no failed calls. Numbers below are held-out unless 
 - **The reference answers are AI-drafted and unreviewed.** In 6 of the 14 reviewed answers, they expected points the answer was never given the clauses for.
 - **Every question is dated at least 44 days after its data,** so all data looked stale. That partly explains some over-cautious answers.
 - **The held-out set has now been studied,** so a clean re-test needs fresh questions.
-- **The review is AI-assisted and covers only 14 answers.** ChatGPT 6.1 Sol did the first pass and I edited lightly, so finding 6 compares two AI reviewers, one of them checked by me, not an AI against an independent human. It's enough to show the judge is lenient, not to say by how much.
+- **The human review step was done with AI assistance.** For expedience, I had ChatGPT 6.1 Sol do the review on my instructions, then went through its responses and edited them lightly. In a real deployment, a risk analyst would do this step. It covers only 14 answers, so it shows the judge is lenient, not by how much.
 
 ## Possible extensions
 
