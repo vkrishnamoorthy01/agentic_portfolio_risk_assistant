@@ -22,8 +22,8 @@ The human-approval step and the escalation logging in the risk policy (`policy/r
 - **Market data**: daily closes for the 16 tickers from Kite, IBKR paper or IBKR live (downloaded by `scripts/refresh_prices.py`), or synthetic prices (`data/generate_mock_data.py`) where nothing has been downloaded.
 - **Analytics tool**: Python service ported from `risk_project`, exposing deterministic calculations (returns, vol, contributors, concentration, historical VaR, drawdown) over HTTP. The LLM never does the arithmetic itself.
 - **RAG**: a fictional 32-clause risk policy manual (v2.1), retrieved via real embedding and cosine-similarity search, no vector DB needed at this scale.
-- **Orchestrator**: Make.com (free plan). V1 uses a fixed scenario; V4 swaps in Make's AI Agent module so the LLM decides which tools to call.
-- **Hosting**: the Python service runs locally, tunneled to Make via [ngrok](https://ngrok.com) (free). It is also deployed on [Render](https://render.com) (see Deployment below).
+- **Orchestrator**: [Make.com](https://www.make.com) (free plan). V1 uses a fixed scenario; V4 swaps in Make's AI Agent module so the LLM decides which tools to call.
+- **Hosting**: the Python service is deployed on [Render](https://render.com) (free tier), and Make calls it there. It can also run locally, tunneled to Make via [ngrok](https://ngrok.com) (free).
 - **MCP (V5)**: `analytics/mcp_server.py` wraps the same `get_analytics`/`retrieve` logic as MCP tools over stdio, registered via `.mcp.json`. Host/client is Claude Code itself, so no ngrok or cloud infra needed.
 
 ## Running it
@@ -47,7 +47,7 @@ uvicorn service:app --reload
 ```
 
 
-Then hit `http://localhost:8000/analytics` or `http://localhost:8000/policy?query=...` directly. For overall risk questions, add `&include_core=true`: the policy search alone often returns the worked examples instead of the rules, so this always adds the core limit and escalation clauses (RP13, RP15, RP17, RP19, RP25) ahead of the search results. Wiring this into Make.com the way V1-V4 do also needs an ngrok tunnel and a Make scenario with an Anthropic API key configured in Make's UI. Both live outside this repo, so they're not reproducible just by cloning it.
+Then hit `http://localhost:8000/analytics` or `http://localhost:8000/policy?query=...` directly. For overall risk questions, add `&include_core=true`: the policy search alone often returns the worked examples instead of the rules, so this always adds the core limit and escalation clauses (RP13, RP15, RP17, RP19, RP25) ahead of the search results. Wiring this into Make.com the way V1-V4 do also needs the service reachable from the internet (Render, or ngrok for a local copy) and a Make scenario with Claude configured in Make's UI. Both live outside this repo, so they're not reproducible just by cloning it.
 
 **Price data.** `/analytics?source=` (or the `PRICE_SOURCE` variable) picks the prices:
 
