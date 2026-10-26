@@ -19,7 +19,7 @@ User -> Make.com (orchestrator) -> Portfolio Analytics tool (Python, determinist
 The human-approval step and the escalation logging in the risk policy (`policy/risk_policy_v2.md`) are controls the policy prescribes. Nothing in this repo enforces them: no approval gate, no escalation log. The assistant only reads numbers and policy text; it can't trade.
 
 
-- **Market data**: synthetic daily prices for the 16 tickers (`data/generate_mock_data.py`), no live Kite dependency, swappable later.
+- **Market data**: daily closes for the 16 tickers from Kite, IBKR paper or IBKR live (downloaded by `scripts/refresh_prices.py`), or synthetic prices (`data/generate_mock_data.py`) where nothing has been downloaded.
 - **Analytics tool**: Python service ported from `risk_project`, exposing deterministic calculations (returns, vol, contributors, concentration, historical VaR) over HTTP. The LLM never does the arithmetic itself.
 - **RAG**: a short fictional risk policy document, retrieved via real embedding and cosine-similarity search, no vector DB needed at this scale.
 - **Orchestrator**: Make.com (free plan). V1 uses a fixed scenario; V4 swaps in Make's AI Agent module so the LLM decides which tools to call.
@@ -49,7 +49,24 @@ uvicorn service:app --reload
 
 Then hit `http://localhost:8000/analytics` or `http://localhost:8000/policy?query=...` directly. Wiring this into Make.com the way V1-V4 do also needs an ngrok tunnel and a Make scenario with an Anthropic API key configured in Make's UI. Both live outside this repo, so they're not reproducible just by cloning it.
 
-Every `/analytics` response is computed from the synthetic price file and says so: `data_source` is `synthetic` and `as_of` is the file's last date (2026-09-11). Bad inputs fail loudly instead of producing a number: a missing price or ticker returns a 500 with the reason, and an empty, overlong (over 500 characters) or out-of-range `/policy` request returns a 422.
+**Price data.** `/analytics?source=` (or the `PRICE_SOURCE` variable) picks the prices:
+
+| Source | What it reads |
+|---|---|
+| `latest` (default) | the most recent download; synthetic only if nothing has been downloaded |
+| `kite`, `ibkr_paper`, `ibkr_live` | `data/prices_<source>.csv`, written by `scripts/refresh_prices.py` |
+| `synthetic` | `data/mock_prices.csv` (generated, not market data) |
+
+Nothing is downloaded while serving a request: Kite needs a daily login and IBKR needs TWS running. To get the newest prices, run the refresh yourself, using the quant repo's price code (`QUANT_REPO`, default `D:\Personal_projects\quant_risk_and_trading_portfolio`) in an environment with its dependencies (`personal_projects`):
+
+```
+python scripts/refresh_prices.py --source ibkr_live               # TWS live, port 7496
+python scripts/refresh_prices.py --source ibkr_paper              # TWS paper, port 7497
+python scripts/refresh_prices.py --source kite                    # Kite login
+python scripts/refresh_prices.py --source ibkr_live --cache-only  # IBKR bars already stored, no connection
+```
+
+Market data only; nothing places orders. The downloads are gitignored, so Docker, CI and Render serve synthetic prices. Every response names its source (`data_source`), its last session (`as_of`), what is downloaded (`downloaded_sources`), and in `data_note` how to fetch newer prices. Bad inputs fail loudly instead of producing a number: a missing price or ticker returns a 500 with the reason, and an empty, overlong (over 500 characters) or out-of-range `/policy` request returns a 422.
 
 **Docker:**
 

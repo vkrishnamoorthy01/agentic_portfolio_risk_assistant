@@ -29,17 +29,24 @@ mcp = MCPServer("portfolio-risk-tools")
 
 
 @mcp.tool()
-def get_portfolio_analytics() -> dict:
+def get_portfolio_analytics(source: str = "latest") -> dict:
     """Get portfolio risk analytics for the 16-stock NSE equal-weighted
-    portfolio, computed from a SYNTHETIC price dataset (not market data),
-    as of the last date in that dataset (the "as_of" field): 1-day return,
-    20-day annualized volatility, 99% one-day historical VaR, drawdown from
-    peak, largest position (concentration), and top contributors/detractors.
-    Use this whenever a question needs the portfolio's numbers rather than
-    policy interpretation, and state the as_of date and that the data is
-    synthetic when reporting them.
+    portfolio as of the last session in the chosen price data (the "as_of"
+    field): 1-day return, 20-day annualized volatility, 99% one-day
+    historical VaR, drawdown from peak, largest position (concentration),
+    and top contributors/detractors.
+
+    source: "latest" (default, the most recently downloaded prices),
+    "kite", "ibkr_paper", "ibkr_live", or "synthetic" (generated, not
+    market data). Nothing is downloaded by this call; "downloaded_sources"
+    lists what is on disk and "data_note" says how the user can fetch newer
+    prices. Use this whenever a question needs the portfolio's numbers
+    rather than policy interpretation. When reporting, state data_source and
+    as_of, and if as_of is not the latest completed session, tell the user
+    they can refresh from Kite or IBKR or proceed with the latest data
+    available.
     """
-    return get_analytics()
+    return get_analytics(source)
 
 
 @mcp.tool()
