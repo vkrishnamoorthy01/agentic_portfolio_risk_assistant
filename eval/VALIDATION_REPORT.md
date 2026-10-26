@@ -73,6 +73,23 @@ Failure patterns, from the per-case files:
 - **Overall and escalation questions miss the core limit clauses.** H12 (all four breached): RP13 rank 32, RP19 rank 25. H14 overall: RP19 rank 26.
 - **Injected passages are retrieved.** In 2 of 2 injected cases, the injected passage reached the top 2 handed to the model. D18 was rank 1. H22 was rank 1 (baseline) and rank 2 (candidate).
 
+### Core clauses (`include_core`, added 2026-10-26)
+After the evaluation, `/policy` and the MCP tool gained `include_core=true`. It always returns the core limit and escalation clauses (RP13, RP15, RP17, RP19, RP25) first, then the usual top_k search results, so a request with top_k 2 hands over 7 clauses. It was added because the Make v4 agent, asked "Are there any serious risk issues in my portfolio today?", retrieved only RP14 and RP29 and answered without the thresholds.
+
+Retrieval-only results (`eval/results/retrieval/*_candidate_core_*`); "all" means every required clause was handed over:
+
+| Split | Search, 2 clauses (before) | Search, 7 clauses | Core + search, 7 clauses |
+|---|---|---|---|
+| dev, all cases (21) | 9 (43%) | 14 (67%) | 17 (81%) |
+| dev, cases with portfolio numbers (8) | 1 (13%) | 3 (38%) | 6 (75%) |
+| held-out, all cases (26) | 9 (35%) | 13 (50%) | 16 (62%) |
+| held-out, cases with portfolio numbers (17) | 4 (24%) | 7 (41%) | 10 (59%) |
+
+- **The core clauses help beyond simply asking for more clauses.** With the same 7 clauses, core + search completes 16 held-out cases against 13 for search alone.
+- **What is still missed are situational clauses, not limits:** untrusted content (RP28) in the attack cases, freshness (RP09), missing inputs (RP10), exceptions (RP26), amendments (RP02), Amber review (RP16), unsupported measurements (RP18), the assistant's own scope (RP27) and the measurement date (RP08). These depend on what the data or the question contains, so a fixed core list cannot cover them.
+- **Injected passages still get through.** In both injection cases the injected passage now ranks 6th, which is still inside the 7 clauses handed over.
+- **The held-out figures are optimistic.** The core-clause idea came from studying failures that included held-out cases, so this is not a clean out-of-sample test. The answer-quality runs above used search with 2 clauses, not this setting.
+
 ### Answer quality (component level)
 Haiku 4.5 answers each case twice: with the clauses the service retrieves (top 2), and with the complete reference clauses. The gap between the two is the cost of retrieval misses.
 
@@ -144,9 +161,12 @@ Vivek Krishnamoorthy scored the 14 held-out answers built from retrieved evidenc
 | Faithfulness for the reference condition and dev | about $0.035 per answer (about $2.50 for the remaining 72 answers) |
 | Tool-selection evaluation | saved Make.com tool traces (none in the repo) |
 | Independent review of reference answers | a reviewer other than the drafting AI |
-| Retrieval change | your decision; would be tuned on dev and then scored once on a fresh held-out set, since this one has now been used |
+| Answer quality with `include_core` | a paid re-run (about $1.60 for the cases with portfolio numbers), ideally on fresh held-out cases |
 
-The retrieval change that the evidence supports, though it was not tested: for portfolio and overall questions, always include the core limit clauses (RP13, RP15, RP17, RP19, RP25 and RP08-RP10), and use semantic search only for the remainder. Raising top_k alone helps less: complete@5 is still 42-50% on held-out.
+The core-clause change is implemented (`include_core`, section 3) and measured for retrieval only. A next step the misses point to is to add the situational clauses based on the analytics output itself. For example:
+- add RP10 when a measure is missing;
+- add RP09 when `as_of` is not the latest session;
+- add RP28 when the evidence contains instructions.
 
 **Known limitation: question dating.** Every case is dated 2026-10-25, but every fixture is dated 2026-09-11 (F8 is 2026-08-14). So every portfolio snapshot looked at least 44 days stale, not only the freshness cases. The over-abstention seen in H04 and H28 is therefore partly an artifact of the dataset, not purely a model weakness. The main findings do not depend on dates: retrieval misses, classification errors, injection resistance and canary handling.
 
