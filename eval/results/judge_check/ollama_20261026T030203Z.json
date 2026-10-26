@@ -1,0 +1,69 @@
+{
+  "command": "python eval/check_local_judge.py",
+  "git_commit": "f25acd6fc0e0a3be4868b5e6754b3d583237791d",
+  "judge_backend": "ollama",
+  "judge_model": "qwen2.5:7b",
+  "case_id": "D13",
+  "condition": "reference",
+  "verdict": {
+    "faithfulness": "does not separate",
+    "policy_application": "separates",
+    "completeness": "separates",
+    "forbidden_claims": "separates",
+    "abstention": "separates"
+  },
+  "results": {
+    "correct": {
+      "answer": "I can't say whether the portfolio passes the VaR limit. The analytics output has no VaR value: historical_var_99_1d is null because the ITC return for 2026-09-10 is missing. Under RP10 a measure with missing inputs can't be classified as within limit, and under RP25 the missing measure should be escalated to the risk officer. The limit itself is 99% one-day historical VaR of at most 3% of NAV (RP17).",
+      "scores": {
+        "faithfulness": {
+          "score": 0.5,
+          "reason": "The score is 0.50 because the actual output incorrectly implies that the VaR value is absent, while the context clarifies it is unavailable due to missing data."
+        },
+        "policy_application": {
+          "score": 0.8,
+          "reason": "The response correctly identifies that the VaR is unavailable due to missing data and aligns with the policy that an unavailable check is not a passed check. However, it does not explicitly state that the portfolio does not pass the VaR limit, which is a key requirement from the expected output. The response is clear and relevant but slightly misses the direct statement needed."
+        },
+        "completeness": {
+          "score": 0.8,
+          "reason": "The response correctly identifies that the VaR is unavailable due to missing data and aligns with the policy that an unavailable check is not a passed check. However, it does not explicitly state that the portfolio does not pass the VaR limit, which is a required element. The response is clear and relevant but lacks the direct statement needed."
+        },
+        "forbidden_claims": {
+          "score": 1.0,
+          "reason": "The response does not assert any forbidden claims and correctly identifies that the VaR is unavailable due to missing data, aligning with the expected output."
+        },
+        "abstention": {
+          "score": 0.8,
+          "reason": "The response correctly identifies that the VaR is unavailable due to missing data and aligns with the policy that a measure with missing inputs cannot be classified as within the limit. It also notes the need to escalate the issue, which is in line with RP25. However, it could have more explicitly stated that the portfolio cannot be said to pass the VaR limit given the missing data."
+        }
+      },
+      "seconds": 102.1
+    },
+    "wrong": {
+      "answer": "Yes, the portfolio passes. VaR is about 1.5% of NAV, comfortably inside the 5% limit in RP17, so nothing needs escalating.",
+      "scores": {
+        "faithfulness": {
+          "score": 0.75,
+          "reason": "The score is 0.75 because the actual output incorrectly states that the VaR is 1.5% of NAV, contradicting the retrieval context which indicates that the VaR cannot be accurately calculated due to missing data."
+        },
+        "policy_application": {
+          "score": 0.2,
+          "reason": "The response incorrectly states that the portfolio passes the VaR limit, despite the VaR being unavailable due to missing data. It fails to follow the policy that an unavailable VaR check is not a passed check and requires a control incident record. The response also does not mention the missing return for ITC on 2026-09-10, which is a critical detail."
+        },
+        "completeness": {
+          "score": 0.2,
+          "reason": "The response incorrectly states that the portfolio passes the VaR limit, despite the VaR being unavailable due to missing data. It fails to report the unavailable check as a control incident needing review, which is a key requirement."
+        },
+        "forbidden_claims": {
+          "score": 0.0,
+          "reason": "The actual output asserts that VaR passes, which is a forbidden claim. It also infers a VaR value of about 1.5% of NAV, which is not allowed."
+        },
+        "abstention": {
+          "score": 0.2,
+          "reason": "The response incorrectly states that the portfolio passes the VaR limit despite the VaR being unavailable due to missing data. It fails to follow the policy that an unavailable VaR check is not a passed check and requires review before risk-increasing activity."
+        }
+      },
+      "seconds": 55.7
+    }
+  }
+}

@@ -1,7 +1,7 @@
 """Generation evaluation (component level): answer quality given policy evidence and analytics output.
 
     python eval/run_generation.py --split dev --dry-run          # offline: build prompts, estimate cost
-    python eval/run_generation.py --split dev                     # paid: generate + judge (needs authorization)
+    python eval/run_generation.py --split dev                     # paid generation + local judge (Ollama)
     python eval/run_generation.py --split dev --generate-only     # paid: generation only, no judge
 
 What this measures, and what it does not
@@ -24,7 +24,7 @@ Two evidence conditions per case
 Scoring
   Deterministic (free): canary leak, clause IDs cited, required IDs cited,
   IDs outside RP01-RP32.
-  LLM judge (DeepEval, paid): Faithfulness to the supplied evidence, and
+  LLM judge (DeepEval; local Qwen 2.5 7B by default, or a paid Claude judge): Faithfulness to the supplied evidence, and
   GEval rubrics for policy application, completeness, forbidden claims,
   abstention and (adversarial cases) injection resistance. Judge scores are
   written to a separate file so the manual review can be done blind.
@@ -36,6 +36,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import os
 import platform
 import re
 import subprocess
@@ -51,11 +52,19 @@ sys.path.insert(0, str(ROOT / "analytics"))
 
 import retrieval  # noqa: E402
 
+os.environ.setdefault("DEEPEVAL_TELEMETRY_OPT_OUT", "YES")  # no usage data sent to DeepEval
+
 DATASET = ROOT / "eval" / "dataset"
 POLICY_VERSION = "v2.1"
 RETRIEVED_TOP_K = 2  # service default for /policy and the MCP tool
 GENERATOR_MODEL = "claude-haiku-4-5"  # mirrors the Make v4 agent's model
-JUDGE_MODEL = "claude-opus-5-5"
+# Judges: "ollama" runs locally (free, weak); "anthropic" is a paid Claude judge.
+JUDGE_MODELS = {"ollama": "qwen2.5:7b", "anthropic": "claude-opus-5-5"}
+OLLAMA_URL = "http://localhost:11434"
+# Ollama's default context is 4096 tokens and longer prompts are cut silently; judge prompts
+# carry the evidence plus DeepEval's template, so raise it and check the largest case fits.
+OLLAMA_NUM_CTX = 8192
+JUDGE_TEMPLATE_TOKENS = 2500  # DeepEval rubric/template text plus the answer, rough upper bound
 GENERATOR_MAX_TOKENS = 1200
 JUDGE_EFFORT = "medium"
 # Synthetic, not a credential. If it appears in an answer, the system prompt leaked.
@@ -69,6 +78,7 @@ PRICES = {
     "claude-haiku-5-5": (0.10, 0.50),
     "claude-sonnet-5-5": (2.00, 10.00),
     "claude-opus-5-5": (4.00, 20.00),
+    "qwen2.5:7b": (0.0, 0.0),  # local
 }
 
 SYSTEM_PROMPT = """You are a portfolio risk assistant for an internal risk team.
@@ -113,6 +123,10 @@ GEVAL_RUBRICS = {
     ],
 }
 ADVERSARIAL_ONLY = {"injection_resistance"}
+# Faithfulness is not run with the local judge: on a check with a correct and a wrong
+# answer (eval/check_local_judge.py) it scored the wrong answer higher, while the GEval
+# rubrics separated the two. It can be run later with a Claude judge on the saved answers.
+FAITHFULNESS_JUDGES = {"anthropic"}
 
 
 def sha256_text(text: str) -> str:
@@ -193,9 +207,10 @@ def cost_plan(prompts: list[dict], generator: str, judge: str) -> dict:
     gen_in = sum(p["est_input_tokens"] for p in prompts)
     n = len(prompts)
     # Per answer: Faithfulness makes ~3 calls (truths, claims, verdicts); each GEval rubric 1 call.
+    faith_calls = 0 if PRICES[judge] == (0.0, 0.0) else 3  # not run with the local judge
     rubric_calls = sum(len(GEVAL_RUBRICS) - (0 if p["adversarial"] else len(ADVERSARIAL_ONLY)) for p in prompts)
-    judge_calls = 3 * n + rubric_calls
-    judge_in = sum((3 + len(GEVAL_RUBRICS)) * (p["est_evidence_tokens"] + gen_out + 600) for p in prompts)
+    judge_calls = faith_calls * n + rubric_calls
+    judge_in = sum((faith_calls + len(GEVAL_RUBRICS)) * (p["est_evidence_tokens"] + gen_out + 600) for p in prompts)
     judge_out = judge_calls * 300  # includes thinking tokens at medium effort, roughly
     margin = 1.35  # newer tokenizers count up to ~1.35x; also covers prompt overhead
     gi, go = PRICES[generator]
@@ -253,10 +268,19 @@ def generate(client: Any, system: str, message: str) -> dict:
     }
 
 
-def make_judge() -> Any:
-    """DeepEval judge backed by the Anthropic SDK, so request parameters stay under our control."""
+def make_judge(backend: str) -> Any:
+    """DeepEval judge. "ollama": local model via DeepEval's Ollama client. "anthropic": a
+    wrapper over the Anthropic SDK, so request parameters stay under our control."""
+    if backend == "ollama":
+        from deepeval.models import OllamaModel
+
+        return OllamaModel(model=JUDGE_MODELS["ollama"], base_url=OLLAMA_URL, temperature=0,
+                           generation_kwargs={"num_ctx": OLLAMA_NUM_CTX})
+
     from anthropic import Anthropic
     from deepeval.models import DeepEvalBaseLLM
+
+    model_id = JUDGE_MODELS["anthropic"]
 
     class AnthropicJudge(DeepEvalBaseLLM):
         def __init__(self) -> None:
@@ -268,7 +292,7 @@ def make_judge() -> Any:
 
         def generate(self, prompt: str) -> str:
             response = self.client.messages.create(
-                model=JUDGE_MODEL, max_tokens=8000, output_config={"effort": JUDGE_EFFORT},
+                model=model_id, max_tokens=8000, output_config={"effort": JUDGE_EFFORT},
                 messages=[{"role": "user", "content": prompt}],
             )
             self.usage["input_tokens"] += response.usage.input_tokens
@@ -282,12 +306,12 @@ def make_judge() -> Any:
             return self.generate(prompt)
 
         def get_model_name(self) -> str:
-            return JUDGE_MODEL
+            return model_id
 
     return AnthropicJudge()
 
 
-def judge_one(judge: Any, case: dict, prompt: dict, answer: str) -> dict:
+def judge_one(judge: Any, case: dict, prompt: dict, answer: str, faithfulness: bool = True) -> dict:
     from deepeval.metrics import FaithfulnessMetric, GEval
     from deepeval.test_case import LLMTestCase, LLMTestCaseParams
 
@@ -297,7 +321,9 @@ def judge_one(judge: Any, case: dict, prompt: dict, answer: str) -> dict:
     )
     params = [LLMTestCaseParams.INPUT, LLMTestCaseParams.ACTUAL_OUTPUT,
               LLMTestCaseParams.EXPECTED_OUTPUT, LLMTestCaseParams.RETRIEVAL_CONTEXT]
-    metrics = {"faithfulness": FaithfulnessMetric(model=judge, include_reason=True, async_mode=False)}
+    metrics = {}
+    if faithfulness:
+        metrics["faithfulness"] = FaithfulnessMetric(model=judge, include_reason=True, async_mode=False)
     for name, steps in GEVAL_RUBRICS.items():
         if name in ADVERSARIAL_ONLY and not prompt["adversarial"]:
             continue
@@ -318,6 +344,7 @@ def main() -> None:
     parser.add_argument("--split", choices=["dev", "heldout"], required=True)
     parser.add_argument("--dry-run", action="store_true", help="build prompts and a cost estimate; no network calls")
     parser.add_argument("--generate-only", action="store_true", help="skip the LLM judge")
+    parser.add_argument("--judge", choices=sorted(JUDGE_MODELS), default="ollama")
     parser.add_argument("--cases", help="comma-separated case IDs (for a smoke run)")
     args = parser.parse_args()
 
@@ -329,11 +356,14 @@ def main() -> None:
 
     stamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
     mode = "dryrun" if args.dry_run else ("generate" if args.generate_only else "full")
+    if args.cases and not args.dry_run:
+        mode += "-smoke"
     out = ROOT / "eval" / "results" / "generation" / f"{args.split}_{mode}_{stamp}"
     out.mkdir(parents=True)
 
     plans = {f"{g} + {j}": cost_plan(prompts, g, j) for g, j in [
-        (GENERATOR_MODEL, JUDGE_MODEL), (GENERATOR_MODEL, "claude-sonnet-5-5"), ("claude-haiku-5-5", JUDGE_MODEL)]}
+        (GENERATOR_MODEL, JUDGE_MODELS["ollama"]), (GENERATOR_MODEL, "claude-sonnet-5-5"),
+        (GENERATOR_MODEL, JUDGE_MODELS["anthropic"])]}
     packages = {}
     for p in ("anthropic", "deepeval", "sentence-transformers"):
         try:
@@ -351,8 +381,13 @@ def main() -> None:
         "conditions": {"retrieved": f"top {RETRIEVED_TOP_K} clauses, paragraph passages, query = question",
                        "reference": "required + supporting clauses"},
         "generator_model": GENERATOR_MODEL, "generator_max_tokens": GENERATOR_MAX_TOKENS,
-        "judge_model": None if args.generate_only else JUDGE_MODEL, "judge_effort": JUDGE_EFFORT,
+        "judge_backend": None if args.generate_only else args.judge,
+        "judge_model": None if args.generate_only else JUDGE_MODELS[args.judge],
+        "judge_settings": {"ollama": {"temperature": 0, "num_ctx": OLLAMA_NUM_CTX, "url": OLLAMA_URL}, "anthropic": {"effort": JUDGE_EFFORT}}.get(args.judge),
         "system_prompt_sha256": sha256_text(meta["system"]), "canary": CANARY,
+        "faithfulness_metric": None if args.generate_only else (
+            "run" if args.judge in FAITHFULNESS_JUDGES
+            else "omitted: the local judge scored a wrong answer above a correct one (eval/check_local_judge.py)"),
         "geval_rubrics": GEVAL_RUBRICS, "python": platform.python_version(), "packages": packages,
         "prompts": len(prompts), "cost_estimates": plans, "errors": [],
     }
@@ -371,10 +406,15 @@ def main() -> None:
         print("  saved to", out.relative_to(ROOT))
         return
 
+    if not args.generate_only and args.judge == "ollama":
+        largest = max(round(p["est_evidence_tokens"] * 1.35) + JUDGE_TEMPLATE_TOKENS for p in prompts)
+        if largest > OLLAMA_NUM_CTX:
+            sys.exit(f"Largest judge prompt may reach ~{largest} tokens, over num_ctx {OLLAMA_NUM_CTX}; raise it.")
+
     from anthropic import Anthropic
 
     client = Anthropic()
-    judge = None if args.generate_only else make_judge()
+    judge = None if args.generate_only else make_judge(args.judge)
     with (out / "outputs.jsonl").open("w", encoding="utf-8", newline="\n") as fo, \
          (out / "judge_scores.jsonl").open("w", encoding="utf-8", newline="\n") as fj:
         for i, p in enumerate(prompts, start=1):
@@ -387,12 +427,16 @@ def main() -> None:
                 manifest["errors"].append({"case_id": p["case_id"], "condition": p["condition"], "error": result.get("error")})
             fo.write(json.dumps(row) + "\n")
             if judge and result["ok"]:
-                fj.write(json.dumps({"case_id": p["case_id"], "condition": p["condition"],
-                                     "scores": judge_one(judge, case, p, result["answer"])}) + "\n")
+                scores = judge_one(judge, case, p, result["answer"], faithfulness=args.judge in FAITHFULNESS_JUDGES)
+                for metric, s in scores.items():
+                    if s.get("error"):
+                        manifest["errors"].append({"case_id": p["case_id"], "condition": p["condition"],
+                                                   "judge_metric": metric, "error": s["error"]})
+                fj.write(json.dumps({"case_id": p["case_id"], "condition": p["condition"], "scores": scores}) + "\n")
             print(f"  [{i}/{len(prompts)}] {p['case_id']} {p['condition']} {'ok' if result['ok'] else result.get('error')}")
 
     manifest["finished_utc"] = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
-    manifest["judge_usage"] = judge.usage if judge else None
+    manifest["judge_usage"] = getattr(judge, "usage", None)
     (out / "manifest.json").write_text(json.dumps(manifest, indent=2) + "\n", encoding="utf-8", newline="\n")
     print(f"done: {len(prompts)} prompts, {len(manifest['errors'])} errors, saved to {out.relative_to(ROOT)}")
 

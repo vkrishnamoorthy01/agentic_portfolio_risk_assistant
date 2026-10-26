@@ -2,3 +2,4 @@
 # Not used by the service, the tests or CI. Install versions are recorded in each run manifest.
 anthropic
 deepeval
+ollama  # client for the local judge (eval/run_generation.py --judge ollama)

@@ -42,3 +42,6 @@ desktop.ini
 .pytest_cache/
 .mypy_cache/
 .ruff_cache/
+
+# DeepEval local cache
+.deepeval/
