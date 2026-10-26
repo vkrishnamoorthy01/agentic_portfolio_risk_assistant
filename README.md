@@ -12,7 +12,7 @@ Equal-weighted, ₹1 crore notional: HDFCBANK, ICICIBANK, SBIN, TCS, INFY, WIPRO
 
 ```
 User -> Make.com (orchestrator) -> Portfolio Analytics tool (Python, deterministic)
-                                 -> Risk Policy RAG (embeddings over a short policy doc)
+                                 -> Risk Policy RAG (embeddings over a full risk policy manual)
      -> synthesized risk assessment -> human approval for any consequential action
 ```
 
@@ -20,22 +20,22 @@ The human-approval step and the escalation logging in the risk policy (`policy/r
 
 
 - **Market data**: daily closes for the 16 tickers from Kite, IBKR paper or IBKR live (downloaded by `scripts/refresh_prices.py`), or synthetic prices (`data/generate_mock_data.py`) where nothing has been downloaded.
-- **Analytics tool**: Python service ported from `risk_project`, exposing deterministic calculations (returns, vol, contributors, concentration, historical VaR) over HTTP. The LLM never does the arithmetic itself.
+- **Analytics tool**: Python service ported from `risk_project`, exposing deterministic calculations (returns, vol, contributors, concentration, historical VaR, drawdown) over HTTP. The LLM never does the arithmetic itself.
 - **RAG**: a fictional 32-clause risk policy manual (v2.1), retrieved via real embedding and cosine-similarity search, no vector DB needed at this scale.
 - **Orchestrator**: Make.com (free plan). V1 uses a fixed scenario; V4 swaps in Make's AI Agent module so the LLM decides which tools to call.
-- **Local hosting**: the Python service runs locally, tunneled to Make via ngrok (free).
+- **Hosting**: the Python service runs locally, tunneled to Make via [ngrok](https://ngrok.com) (free). It is also deployed on [Render](https://render.com) (see Deployment below).
 - **MCP (V5)**: `analytics/mcp_server.py` wraps the same `get_analytics`/`retrieve` logic as MCP tools over stdio, registered via `.mcp.json`. Host/client is Claude Code itself, so no ngrok or cloud infra needed.
 
 ## Running it
 
-Needs Python 3.11+ and pip. Install deps:
+Needs Python 3.12 and pip. Install deps:
 
 ```
 pip install -r requirements.txt
 ```
 
 
-No API keys needed for anything in this repo. Mock price data (`data/mock_prices.csv`) is already checked in; regenerate with `python data/generate_mock_data.py` if needed (fixed seed, so reproducible output).
+The service, tests, retrieval evaluation and MCP server need no API keys. Only the answer-quality evaluation (an Anthropic API key, paid) and the price refresh (a Kite login or IBKR TWS) need credentials. Mock price data (`data/mock_prices.csv`) is checked in and used whenever no Kite or IBKR prices have been downloaded; regenerate it with `python data/generate_mock_data.py` (fixed seed, so reproducible output).
 
 **MCP path (V5, easiest to try locally):** point an MCP host (I built and tested against Claude Code) at this project directory. `.mcp.json` registers `analytics/mcp_server.py` as a stdio server; the host discovers `get_portfolio_analytics` and `get_risk_policy_sections` on its own.
 
