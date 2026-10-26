@@ -1,7 +1,7 @@
 """Sanity check of a judge before using it: can it tell a correct answer from a wrong one?
 
     python eval/check_local_judge.py            # local Ollama judge, free
-    python eval/check_local_judge.py --judge anthropic
+    python eval/check_local_judge.py --judge sonnet
 
 Scores two hand-written answers to dev case D13 (VaR unavailable), with the
 reference evidence: one correct (declines to classify, cites RP10/RP25/RP17),
